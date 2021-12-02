@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>x64</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="CSparse.Extensions">
+      <HintPath>bin\Release\net5.0\CSparse.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="CSparse.Interop">
+      <HintPath>bin\Release\net5.0\CSparse.Interop.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

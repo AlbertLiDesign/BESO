@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "BESO": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
