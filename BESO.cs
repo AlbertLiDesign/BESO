@@ -8,12 +8,11 @@ using System.Runtime.InteropServices;
 
 namespace BESO
 {
-    public class iBESO
+    public class BESO
     {
-        #region 解析度参数
+        #region Resolution
         public int nelx;
         public int nely;
-        public int nels;
         #endregion
         public int[,] subElems;
 
@@ -103,8 +102,8 @@ namespace BESO
 
         public bool OutputK = false;
         public bool changeSupports = true;
-        public iBESO() { }
-        public iBESO(double rmin, double ert = 0.02, double p = 3.0, double vf = 0.5, int maxIter = 100)
+        public BESO() { }
+        public BESO(double rmin, double vf, double ert = 0.02, double p = 3.0, int maxIter = 100)
         {
             if (rmin <= 0.0)
                 throw new Exception("Rmin must be large than 0.");
@@ -117,10 +116,10 @@ namespace BESO
             this.maxIter = maxIter;
             this.rmin = rmin;
 
-            stopwatch = new Stopwatch(); // 计时
+            stopwatch = new Stopwatch();
             optInfo = new StringBuilder("====================== Optimization ======================" + '\n');
         }
-        public iBESO(iBESO ibeso)
+        public BESO(BESO ibeso)
         {
             vf = ibeso.vf;
             p = ibeso.p;
@@ -130,7 +129,6 @@ namespace BESO
 
             nelx = ibeso.nelx;
             nely = ibeso.nely;
-            nels = ibeso.nels;
 
             Xe = (double[,])ibeso.Xe.Clone();
             dc = (double[])ibeso.dc.Clone();
@@ -145,25 +143,22 @@ namespace BESO
             ik = (int[])ibeso.ik.Clone();
             jk = (int[])ibeso.jk.Clone();
 
-            stopwatch = new Stopwatch(); // 计时
+            stopwatch = new Stopwatch();
 
             optInfo = new StringBuilder("====================== Optimization ======================" + '\n');
         }
-        /// <summary>
-        /// 初始化位移模型和优化模型
-        /// </summary>
-        public void Initialize(int nelx, int nely, int nels)
+
+
+        public void Initialize(int nelx, int nely)
         {
             initInfo = new StringBuilder("====================== Launch BESO ======================" + '\n');
 
             this.nelx = nelx;
             this.nely = nely;
-            this.nels = nels;
 
-            // 初始化设计变量
             dc = new double[nely * nelx];
             dc_old = new double[nely * nelx];
-            Xe = new double[nely, nelx]; // 记得乘两次subcount
+            Xe = new double[nely, nelx];
             for (int j = 0; j < nely; j++)
             {
                 for (int i = 0; i < nelx; i++)
@@ -194,7 +189,7 @@ namespace BESO
                 vol = Math.Max(vf, vol * (1.0 - ert));
 
                 #region FEA
-                stopwatch.Restart(); // 计时
+                stopwatch.Restart();
                 FE();
                 stopwatch.Stop();
                 #endregion
@@ -203,7 +198,7 @@ namespace BESO
                 #endregion
 
                 #region Get DC
-                stopwatch.Restart(); // 计时
+                stopwatch.Restart();
                 GetDc();
                 HistoryC.Add(Compliance);
                 stopwatch.Stop();
@@ -213,7 +208,7 @@ namespace BESO
                 #endregion
 
                 #region Flt
-                stopwatch.Restart(); // 计时
+                stopwatch.Restart();
                 Flt(dc.Length, dc, sh);
 
                 if (iter > 1)
@@ -234,7 +229,7 @@ namespace BESO
                 #endregion
 
                 #region ADD & DEL
-                stopwatch.Restart(); // 计时
+                stopwatch.Restart();
                 ADD_DEL(vol);
                 stopwatch.Stop();
                 #endregion
@@ -244,7 +239,7 @@ namespace BESO
 
 
                 #region Checking Convergence
-                stopwatch.Restart(); // 计时
+                stopwatch.Restart();
 
                 // Check convergence 
                 if (iter > 10)
@@ -451,8 +446,6 @@ namespace BESO
             report.Append("=================== Parameters Info ===================" + '\n');
             report.Append("xCount: " + nelx.ToString() + '\n');
             report.Append("yCount: " + nely.ToString() + '\n');
-            report.Append("subCount: " + nels.ToString() + '\n');
-
             return report;
         }
         #endregion

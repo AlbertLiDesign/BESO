@@ -6,18 +6,16 @@ namespace BESO
     {
         static void Main(string[] args)
         {
-            iBESO ibeso = new iBESO(3.0);
-            ibeso.Initialize(80, 50, 1);
+            BESO beso = new BESO(3.0, 0.5);
+            beso.Initialize(80, 50);
 
-            Console.WriteLine(ibeso.initInfo);
-
-            while (!ibeso.convergence)
+            Console.WriteLine(beso.ModelInfo());
+            while (!beso.convergence)
             {
-                ibeso.Optimize();
-                Console.WriteLine(ibeso.info);
+                beso.Optimize();
+                Console.WriteLine(beso.info);
             }
 
-            Console.WriteLine(ibeso.optInfo);
             Console.ReadKey();
         }
     }
