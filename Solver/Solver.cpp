@@ -97,7 +97,11 @@ void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* fr
 
     VectorXd result;
 
-    SimplicialLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
+    //SimplicialLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
+    //llt.analyzePattern(K_freedof);
+    //llt.factorize(K_freedof);
+    //result = llt.solve(F_freedof);
+    CholmodSimplicialLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
     llt.analyzePattern(K_freedof);
     llt.factorize(K_freedof);
     result = llt.solve(F_freedof);

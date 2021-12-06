@@ -10,9 +10,8 @@
 #include <Eigen/CholmodSupport>
 
 #include <unsupported/Eigen/SparseExtra>
-
+#include <cholmod.h>
 #include<time.h> 
-#include<cholmod.h>
 
 extern "C" __declspec(dllexport) void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, 
 	int* free_dofs, int* ik, int* jk, double* vk, double* F, double* U);

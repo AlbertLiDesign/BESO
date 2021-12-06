@@ -11,11 +11,6 @@ namespace BESO
 
             Console.WriteLine(ibeso.initInfo);
 
-            //ibeso.OutputK = true;
-
-            //ibeso.Optimize();
-            //Console.WriteLine(ibeso.info);
-
             while (!ibeso.convergence)
             {
                 ibeso.Optimize();
