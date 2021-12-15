@@ -1,13 +1,18 @@
 #include "Solver.h"
 #include<unsupported/Eigen/src/SparseExtra/MarketIO.h>
 #include <unsupported/Eigen/KroneckerProduct>
+#include<ctime>
 
 using namespace Eigen;
+using namespace std;
 
 SparseMatrix<double> H;
 
 void PreFE(int nelx, int nely, int* ik, int* jk)
 {
+    //clock_t _start;
+    //clock_t _end;
+    //_start = clock();
     MatrixXi nodenrs(nely + 1, nelx + 1);
     int* edofVec = new int[nelx * nely];
     MatrixXi edofMat(nelx * nely, 8);
@@ -60,6 +65,10 @@ void PreFE(int nelx, int nely, int* ik, int* jk)
 
     
     delete[] edofVec;
+
+    //_end = clock();
+    //double endtime = (double)(_end - _start) / CLOCKS_PER_SEC;
+    //cout << "PreFE:" << endtime * 1000 << "ms" << endl;	//msÎªµ¥Î»
 }
 
 void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* vk, double* F, double* U)
@@ -97,17 +106,15 @@ void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* fr
 
     VectorXd result;
 
-    //SimplicialLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
-    //llt.analyzePattern(K_freedof);
-    //llt.factorize(K_freedof);
-    //result = llt.solve(F_freedof);
+    //PardisoLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
+    //llt.pardisoParameterArray()[59] = 0;
+    //mkl_set_num_threads(1);
     CholmodSimplicialLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
+    //CholmodSupernodalLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
     llt.analyzePattern(K_freedof);
     llt.factorize(K_freedof);
     result = llt.solve(F_freedof);
-
-    for (int i = 0; i < num_freeDofs; i++)
-        U[i] = result(i);
+    Eigen::VectorXd::Map(U, result.rows()) = result;
 }
 
 double TransposeMultiply(int rows, int cols, double* A, double* U)
@@ -128,19 +135,14 @@ void GetRowSum(int coo_length, int rows, int* ih, int* jh, double* vh, double* s
     H.resize(rows, rows);
     H.setFromTriplets(triplets.begin(), triplets.end());
     VectorXd result = H * VectorXd::Ones(H.cols());
-    for (size_t i = 0; i < result.count(); i++)
-    {
-        sh[i] = result[i];
-    }
+
+    Eigen::VectorXd::Map(sh, result.rows()) = result;
 }
 
 void Flt(int dc_length, double* dc, double* sh)
 {
     Map<VectorXd> dc_(dc, dc_length);
     Map<VectorXd> sh_(sh, dc_length);
-    VectorXd result = (H.selfadjointView<Lower>() * dc_).array() / sh_.array();
-    for (size_t i = 0; i < result.count(); i++)
-    {
-        dc[i] = result[i];
-    }
+    VectorXd result = (H.selfadjointView<Lower>() * dc_).array() / sh_.array();    
+    Eigen::VectorXd::Map(dc, result.rows()) = result;
 }

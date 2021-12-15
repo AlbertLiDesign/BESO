@@ -7,7 +7,7 @@ namespace BESO
         static void Main(string[] args)
         {
             BESO beso = new BESO(3.0, 0.5);
-            beso.Initialize(80, 50);
+            beso.Initialize(100, 100);
 
             Console.WriteLine(beso.ModelInfo());
             while (!beso.convergence)
@@ -15,6 +15,7 @@ namespace BESO
                 beso.Optimize();
                 Console.WriteLine(beso.info);
             }
+            Console.WriteLine(beso.optInfo);
 
             Console.ReadKey();
         }
