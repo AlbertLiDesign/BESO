@@ -1,40 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.IO;
 
 namespace BESO
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Diagnostics;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Runtime.InteropServices;
-    using Random = System.Random;
-    using System.IO;
-
-    public class iBESO
+    public class BESO2D
     {
-        #region 解析度参数
+        #region Resolution
         public int nelx;
         public int nely;
-        public int nels;
         #endregion
-        public int[,] subElems;
 
         #region FE varialbes
         private double[] U;
-        private double[] F;
         private int[] ik;
         private int[] jk;
         private double[] vk;
-        private double area_w;
         #endregion
         #region BESO Parameters
-        public int N;
         /// <summary>
         /// Filter radius
         /// </summary>
@@ -66,15 +54,10 @@ namespace BESO
         /// Design variables
         /// </summary>
         public double[] Xe;
-        /// <summary>
-        /// Design variables
-        /// </summary>
-        public double[] sub_Xe;
 
-        public double[] sub_dc;
         public double[] dc;
-        private double[] dc_old;
-        public double[] dc_nd;
+        public double[] dc_old;
+
         /// <summary>
         /// Elemental stiffness matrix
         /// </summary>
@@ -117,17 +100,11 @@ namespace BESO
 
         private Stopwatch stopwatch;
 
-        private int sol_id = 0;
-        private Random random;
-
         public bool OutputK = false;
         public bool changeSupports = true;
-
-        public iBESO() { }
-        public iBESO(int ID, double rmin, double ert = 0.02, double p = 3.0, double vf = 0.5, int maxIter = 100)
+        public BESO2D() { }
+        public BESO2D(double rmin, double vf, double ert = 0.02, double p = 3.0, int maxIter = 100)
         {
-            this.sol_id = ID;
-            random = new Random(ID);
             if (rmin <= 0.0)
                 throw new Exception("Rmin must be large than 0.");
             if (!(vf > 0.0 && vf < 1.0))
@@ -142,10 +119,8 @@ namespace BESO
             stopwatch = new Stopwatch();
             optInfo = new StringBuilder("====================== Optimization ======================" + '\n');
         }
-        public iBESO(int ID, iBESO ibeso)
+        public BESO2D(BESO2D ibeso)
         {
-            this.sol_id = ID;
-            random = new Random(ID);
             vf = ibeso.vf;
             p = ibeso.p;
             ert = ibeso.ert;
@@ -154,17 +129,11 @@ namespace BESO
 
             nelx = ibeso.nelx;
             nely = ibeso.nely;
-            nels = ibeso.nels;
-            N = nely * nelx * nels * nels;
 
-            sub_Xe = (double[])ibeso.sub_Xe.Clone();
             Xe = (double[])ibeso.Xe.Clone();
             dc = (double[])ibeso.dc.Clone();
-            sub_dc = (double[])ibeso.sub_dc.Clone();
             dc_old = (double[])ibeso.dc_old.Clone();
             Ke = (double[])ibeso.Ke.Clone();
-            subElems = (int[,])ibeso.subElems.Clone();
-            area_w = 1.0 / nels / nels;
 
             ih = (int[])ibeso.ih.Clone();
             jh = (int[])ibeso.jh.Clone();
@@ -179,37 +148,18 @@ namespace BESO
             optInfo = new StringBuilder("====================== Optimization ======================" + '\n');
         }
 
-        public void Initialize(int nelx, int nely, int nels)
+
+        public void Initialize(int nelx, int nely)
         {
             initInfo = new StringBuilder("====================== Launch BESO ======================" + '\n');
 
             this.nelx = nelx;
             this.nely = nely;
-            this.nels = nels;
-            area_w = 1.0 / nels / nels;
 
-            N = nely * nelx * nels * nels;
-            dc = new double[N];
-            dc_old = new double[N];
-            sub_dc = new double[N];
             dc = new double[nely * nelx];
-            Xe = new double[nely * nelx];
-            for (int j = 0; j < nely; j++)
-            {
-                for (int i = 0; i < nelx; i++)
-                {
-                    Xe[j * nelx + i] = 1.0;
-                }
-            }
-            sub_Xe = new double[N];
-            for (int j = 0; j < nely * nels; j++)
-            {
-                for (int i = 0; i < nelx * nels; i++)
-                {
-                    sub_Xe[j * nelx * nels + i] = 1.0;
-                }
-            }
-            AssociateMeshes();
+            dc_old = new double[nely * nelx];
+            Xe = new double[nely* nelx];
+            Array.Fill(Xe, 1.0);
 
             stopwatch.Start();
             GetKe();
@@ -254,47 +204,26 @@ namespace BESO
                 #region Flt
                 stopwatch.Restart();
                 Flt(dc.Length, dc, sh);
-                stopwatch.Stop();
-                #endregion
-                #region Prepare report
-                stopwatch.Restart();
-                optInfo.Append("Flt:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
-                #endregion
-
-                #region Cal nodal sensitivity
-                stopwatch.Restart();
-                //GetNodalSensitivity();
-                stopwatch.Stop();
-                #endregion
-                #region Prepare report
-                optInfo.Append("Cal dc_node:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
-                #endregion
-
-                #region Bilinear interpolation
-                stopwatch.Restart();
-                if (nels != 1) BilinearInterpolation();
-                else sub_dc = dc;
-
-                stopwatch.Stop();
-                #endregion
-                #region Prepare report
-                optInfo.Append("Bilinear interpolation:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
-                #endregion
 
                 if (iter > 1)
-                    for (int j = 0; j < nely * nels; j++)
+                    for (int j = 0; j < nely; j++)
                     {
-                        for (int i = 0; i < nelx * nels; i++)
+                        for (int i = 0; i < nelx; i++)
                         {
-                            sub_dc[i * nely * nels + j] = (sub_dc[i * nely * nels + j] + dc_old[i * nely * nels + j]) * 0.5;
+                            dc[i * nely + j] = (dc[i * nely + j] + dc_old[i * nely + j]) * 0.5;
                         }
                     }
 
                 // Record the sensitiveies in each step
-                dc_old = (double[])sub_dc.Clone();
+                dc_old = (double[])dc.Clone();
+                stopwatch.Stop();
+                #endregion
+                #region Prepare report
+                optInfo.Append("Flt:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
+                #endregion
 
                 #region ADD & DEL
-                stopwatch.Restart(); // 计时
+                stopwatch.Restart();
                 ADD_DEL(vol);
                 stopwatch.Stop();
                 #endregion
@@ -304,7 +233,7 @@ namespace BESO
 
 
                 #region Checking Convergence
-                stopwatch.Restart(); // 计时
+                stopwatch.Restart();
 
                 // Check convergence 
                 if (iter > 10)
@@ -335,67 +264,15 @@ namespace BESO
                 convergence = true;
             }
         }
-        /// <summary>
-        /// Get nodal sensitivity numbers
-        /// </summary>
-        public void GetNodalSensitivity()
-        {
-            dc_nd = new double[(nelx + 1) * (nely + 1)];
-            int[] sum = new int[dc_nd.Length];
-            for (int i = 0; i < nelx; i++)
-            {
-                for (int j = 0; j < nely; j++)
-                {
-                    dc_nd[i * (nely + 1) + j] += dc[i * nely + j];
-                    dc_nd[i * (nely + 1) + j + 1] += dc[i * nely + j];
-                    dc_nd[(i + 1) * (nely + 1) + j + 1] += dc[i * nely + j];
-                    dc_nd[(i + 1) * (nely + 1) + j] += dc[i * nely + j];
 
-                    sum[i * (nely + 1) + j] += 1;
-                    sum[i * (nely + 1) + j + 1] += 1;
-                    sum[(i + 1) * (nely + 1) + j + 1] += 1;
-                    sum[(i + 1) * (nely + 1) + j] += 1;
-
-                }
-            }
-
-            for (int i = 0; i < dc_nd.Length; i++)
-            {
-                dc_nd[i] /= sum[i];
-            }
-        }
-
-        public void BilinearInterpolation()
-        {
-            for (int elx = 0; elx < nelx; elx++)
-            {
-                for (int ely = 0; ely < nely; ely++)
-                {
-                    for (int a = 0; a < nels; a++)
-                    {
-                        for (int b = 0; b < nels; b++)
-                        {
-                            var x = (a + 0.5) / nels;
-                            var y = (b + 0.5) / nels;
-                            int id = subElems[elx * nely + ely, a * nels + b];
-                            sub_dc[id] = dc_nd[elx * (nely + 1) + ely] * (1 - x) * (1 - y) +
-                              dc_nd[elx * (nely + 1) + ely + 1] * (1 - x) * y +
-                              dc_nd[(elx + 1) * (nely + 1) + ely + 1] * x * y +
-                              dc_nd[(elx + 1) * (nely + 1) + ely] * x * (1 - y);
-                        }
-                    }
-
-                }
-            }
-        }
         private void PreFlt()
         {
-            int rminf = (int)Math.Floor(rmin) - 1;
+            int rminf = (int)Math.Floor(rmin);
 
-            ih = new int[(int)(nely * nelx * Math.Pow((2 * rminf + 1), 2))];
+            ih = new int[(int)(nelx * nely * Math.Pow((2 * rminf + 1), 2))];
             jh = new int[ih.Length];
             vh = new double[ih.Length];
-            sh = new double[nely * nelx];
+            sh = new double[nelx * nely];
 
             int sum = 0;
             for (int i = 0; i < nelx; i++)
@@ -410,38 +287,31 @@ namespace BESO
                             var e2 = k * nely + l + 1;
                             ih[sum] = e1 - 1;
                             jh[sum] = e2 - 1;
-                            vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i - k) * (i - k) + (j - l) * (j - l)));
+                            vh[sum] = Math.Max(0.0, rminf - Math.Sqrt((i - k) * (i - k) + (j - l) * (j - l)));
                             sum++;
                         }
                     }
                 }
             }
 
-            GetRowSum(sum, nely * nelx, ih, jh, vh, sh);
+            GetRowSum(sum, nelx * nely, ih, jh, vh, sh);
         }
         private void ADD_DEL(double volfra)
         {
-            double lowest = sub_dc.Min();
-            double highest = sub_dc.Max();
+            double lowest = dc.Min();
+            double highest = dc.Max();
             double th = 0.0;
-            double vol = volfra * nely * nelx;
+            double vol = volfra * nelx * nely;
             while (((highest - lowest) / highest) > 1e-5)
             {
                 th = (highest + lowest) * 0.5;
                 double sum = 0.0;
-                for (int ely = 0; ely < nely; ely++)
+                for (int j = 0; j < nely; j++)
                 {
-                    for (int elx = 0; elx < nelx; elx++)
+                    for (int i = 0; i < nelx; i++)
                     {
-                        for (int a = 0; a < nels; a++)
-                        {
-                            for (int b = 0; b < nels; b++)
-                            {
-                                int id = subElems[elx * nely + ely, a * nels + b];
-                                sub_Xe[id] = sub_dc[id] > th ? 1.0 : Xmin;
-                                sum += sub_Xe[id] * area_w;
-                            }
-                        }
+                        Xe[j*nelx+ i] = dc[i * nely + j] > th ? 1.0 : Xmin;
+                        sum += Xe[j * nelx + i];
                     }
                 }
                 if (sum - vol > 0.0) lowest = th;
@@ -463,33 +333,12 @@ namespace BESO
                     U[2 * n2], U[2 * n2 + 1], U[2 * n1], U[2 * n1 + 1]};
 
                     double v = TransposeMultiply(8, 8, Ke, Ue);
-                    int id = elx * nely + ely;
-                    Compliance += 0.5 * Math.Pow(sub_Xe[id], p) * v * area_w;
 
-                    dc[id] = 0.5 * Math.Pow(sub_Xe[id], p - 1) * v * area_w;
-                    if (sol_id != 0)
-                    {
-                        dc[id] *= random.Next(75, 100) * 0.01;
-                    }
-                    //for (int a = 0; a < nels; a++)
-                    //{
-                    //    for (int b = 0; b < nels; b++)
-                    //    {
-                    //        int id = subElems[elx * nely + ely, a * nels + b];
-                    //        Compliance += 0.5 * Math.Pow(sub_Xe[id], p) * v * area_w;
-
-                    //        dc[id] = 0.5 * Math.Pow(sub_Xe[id], p - 1) * v * area_w * scored_w[id];
-                    //        if (sol_id != 0)
-                    //        {
-                    //            dc[id] *= random.Next(75, 100) * 0.01;
-                    //        }
-
-                    //    }
-                    //}
+                    Compliance += 0.5 * Math.Pow(Xe[ely*nelx + elx], p) * v;
+                    dc[elx * nely + ely] = 0.5 * Math.Pow(Xe[ely* nelx + elx], p - 1) * v;
                 }
             }
         }
-
         private void FE()
         {
             int num_allDofs = 2 * (nelx + 1) * (nely + 1);
@@ -502,7 +351,7 @@ namespace BESO
             {
                 for (int j = 0; j < nely; j++)
                 {
-                    var ex = Math.Pow(Xe[j * nely + i], p);
+                    var ex = Math.Pow(Xe[j * nelx + i], p);
                     for (int a = 0; a < 8; a++)
                     {
                         for (int b = 0; b < 8; b++)
@@ -565,21 +414,6 @@ namespace BESO
                 k[7],k[2],k[1],k[4],k[3],k[6],k[5],k[0]};
         }
 
-        private void AssociateMeshes()
-        {
-            subElems = new int[nelx * nely, nels * nels];
-
-            for (int i = 0; i < nelx; i++)
-            {
-                for (int j = 0; j < nely; j++)
-                    for (int a = 0; a < nels; a++)
-                        for (int b = 0; b < nels; b++)
-                        {
-                            int id = i * nely * nels * nels + a * nels * nely + j * nels + b;
-                            subElems[nely * i + j, a * nels + b] = id;
-                        }
-            }
-        }
         [DllImport("Solver.dll")]
         private static extern void PreFE(int nelx, int nely, int[] ik, int[] jk);
         [DllImport("Solver.dll")]
@@ -606,30 +440,26 @@ namespace BESO
             report.Append("=================== Parameters Info ===================" + '\n');
             report.Append("xCount: " + nelx.ToString() + '\n');
             report.Append("yCount: " + nely.ToString() + '\n');
-            report.Append("subCount: " + nels.ToString() + '\n');
-
             return report;
         }
 
         public void WriteXe(string path)
         {
-            string output = path + '\\' + "Xe1.txt";
+            string output = path + '\\' + "Xe2.txt";
             StreamWriter sw = new StreamWriter(output);
 
             for (int i = 0; i < nelx; i++)
             {
                 for (int j = 0; j < nely; j++)
                 {
-                    sw.WriteLine(sub_Xe[i * nely + j].ToString());
+                    sw.WriteLine(Xe[j * nelx + i].ToString());
                 }
             }
-
+                
             sw.Flush();
             sw.Close();
             sw.Dispose();
         }
         #endregion
     }
-
-
 }

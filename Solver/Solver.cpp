@@ -8,11 +8,22 @@ using namespace std;
 
 SparseMatrix<double> H;
 
+void WriteMatrix(int row, int col, double* val)
+{
+    MatrixXd K(row, col);
+    for (size_t i = 0; i < row; i++)
+    {
+        for (size_t j = 0; j < col; j++)
+        {
+            K(i, j) = val[i * col + j];
+        }
+    }
+    Eigen::saveMarket(K, "mat.mtx");
+}
+
+
 void PreFE(int nelx, int nely, int* ik, int* jk)
 {
-    //clock_t _start;
-    //clock_t _end;
-    //_start = clock();
     MatrixXi nodenrs(nely + 1, nelx + 1);
     int* edofVec = new int[nelx * nely];
     MatrixXi edofMat(nelx * nely, 8);
@@ -30,7 +41,7 @@ void PreFE(int nelx, int nely, int* ik, int* jk)
     {
         for (size_t x = 0; x < nelx; x++)
         {
-            edofVec[y + x * nely] = 2 * nodenrs(y, x) + 1;
+            edofVec[y + x * nely] = 2 * nodenrs(y, x) + 1;   
         }
     }
 
@@ -63,12 +74,68 @@ void PreFE(int nelx, int nely, int* ik, int* jk)
         }
     }
 
-    
     delete[] edofVec;
+}
 
-    //_end = clock();
-    //double endtime = (double)(_end - _start) / CLOCKS_PER_SEC;
-    //cout << "PreFE:" << endtime * 1000 << "ms" << endl;	//msÎªµ¥Î»
+
+void PreFE3D(int nelx, int nely, int nelz, int* ik, int* jk)
+{
+    int nEl = nelx * nely * nelz;
+    int* nodeNrs = new int[nelz + 1, nely + 1, nelx + 1];
+    int* edofVec = new int[nelx * nely * nelz];
+    MatrixXi edofMat(nelx * nely * nelz, 24);
+    int edofs[8] = { -1, 0, 2 * nely + 1, 2 * nely + 2, 2 * nely + 3, 2 * nely + 4, 1, 2 };
+
+    for (size_t z = 0; z < nelz + 1; z++)
+    {
+        for (size_t y = 0; y < nely + 1; y++)
+        {
+            for (size_t x = 0; x < nelx + 1; x++)
+            {
+                nodeNrs[z, y, x] = z * (nelx + 1) * (nely + 1) + x * (nely + 1) + y;
+            }
+        }
+    }
+
+
+    /*for (size_t y = 0; y < nely; y++)
+    {
+        for (size_t x = 0; x < nelx; x++)
+        {
+            edofVec[y + x * nely] = 2 * nodeNrs(y, x) + 1;
+        }
+    }
+
+    for (size_t i = 0; i < nelx * nely; i++)
+    {
+        for (size_t j = 0; j < 8; j++)
+        {
+            edofMat(i, j) = edofVec[i] + edofs[j];
+        }
+    }
+
+    auto a = kroneckerProduct(edofMat, MatrixXi::Ones(8, 1)).eval();
+    auto za = a.transpose();
+    auto b = kroneckerProduct(edofMat, MatrixXi::Ones(1, 8)).eval();
+    auto zb = b.transpose();
+
+    for (size_t i = 0; i < za.cols(); i++)
+    {
+        for (size_t j = 0; j < za.rows(); j++)
+        {
+            ik[i * za.rows() + j] = za(j, i);
+        }
+    }
+
+    for (size_t i = 0; i < zb.cols(); i++)
+    {
+        for (size_t j = 0; j < zb.rows(); j++)
+        {
+            jk[i * zb.rows() + j] = zb(j, i);
+        }
+    }
+
+    delete[] edofVec;*/
 }
 
 void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* vk, double* F, double* U)

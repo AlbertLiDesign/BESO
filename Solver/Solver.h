@@ -22,3 +22,7 @@ extern "C" __declspec(dllexport) double TransposeMultiply(int rows, int cols, do
 
 extern "C" __declspec(dllexport) void GetRowSum(int coo_length, int rows, int* ih, int* jh, double* vh, double* sh);
 extern "C" __declspec(dllexport) void Flt(int dc_length, double* dc, double* sh);
+
+extern "C" __declspec(dllexport) void WriteMatrix(int row, int col, double* val);
+
+extern "C" __declspec(dllexport) void PreFE3D(int nelx, int nely, int nelz, int* ik, int* jk);
