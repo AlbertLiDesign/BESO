@@ -19,7 +19,6 @@ void PrintMatrix(int row, int col, double* val)
         }
     }
     cout << K << std::endl;
-    //Eigen::saveMarket(K, "mat.mtx");
 }
 
 
@@ -103,10 +102,7 @@ void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* fr
     P.setFromTriplets(P_triplets.begin(), P_triplets.end());
 
     SparseMatrix<double> K_freedof = P * K * P.transpose();
-    //auto DK = MatrixXd(K_freedof);
-    //std::cout << DK << std::endl;
-    Eigen::saveMarket(K_freedof, "mat.mtx");
-    //saveMarket(K_freedof, "C:/Development/K_freedof_cpp.mtx");
+    //Eigen::saveMarket(K_freedof, "mat.mtx");
 
     VectorXd F_freedof(num_freeDofs);
     for (int i = 0; i < num_freeDofs; i++)

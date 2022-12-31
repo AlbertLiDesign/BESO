@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.IO;
 using MathNet.Numerics.LinearAlgebra.Double;
+using System.Globalization;
 
 namespace BESO
 {
@@ -103,6 +104,8 @@ namespace BESO
 
         public bool OutputK = false;
         public bool changeSupports = true;
+
+        #region Constructors
         public BESO3D() { }
         public BESO3D(double rmin, double vf, double ert = 0.02, double p = 3.0, int maxIter = 100)
         {
@@ -148,7 +151,7 @@ namespace BESO
 
             optInfo = new StringBuilder("====================== Optimization ======================" + '\n');
         }
-
+        #endregion
 
         public void Initialize(int nelx, int nely, int nelz)
         {
@@ -173,7 +176,7 @@ namespace BESO
             initInfo.Append("PreFE: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
 
             stopwatch.Restart();
-            //PreFlt();
+            PreFlt();
             stopwatch.Stop();
             initInfo.Append("PreFlt: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
         }
@@ -209,7 +212,7 @@ namespace BESO
 
                 #region Flt
                 stopwatch.Restart();
-                //Flt(dc.Length, dc, sh);
+                Wrapper.Flt(dc.Length, dc, sh);
 
                 if (iter > 1)
                     for (int j = 0; j < nely; j++)
@@ -273,34 +276,42 @@ namespace BESO
 
         private void PreFlt()
         {
-            //int rminf = (int)Math.Floor(rmin);
+            int rminf = (int)Math.Floor(rmin);
 
-            //ih = new int[(int)(nelx * nely * Math.Pow((2 * rminf + 1), 2))];
-            //jh = new int[ih.Length];
-            //vh = new double[ih.Length];
-            //sh = new double[nelx * nely];
+            ih = new int[(int)(nEl * Math.Pow((2 * rminf - 1), 2))];
+            jh = new int[ih.Length];
+            vh = new double[ih.Length];
+            sh = new double[nEl];
 
-            //int sum = 0;
-            //for (int i = 0; i < nelx; i++)
-            //{
-            //    for (int j = 0; j < nely; j++)
-            //    {
-            //        var e1 = i * nely + j + 1;
-            //        for (int k = Math.Max(i - rminf, 0); k < Math.Min(i + rminf + 1, nelx); k++)
-            //        {
-            //            for (int l = Math.Max(j - rminf, 0); l < Math.Min(j + rminf + 1, nely); l++)
-            //            {
-            //                var e2 = k * nely + l + 1;
-            //                ih[sum] = e1 - 1;
-            //                jh[sum] = e2 - 1;
-            //                vh[sum] = Math.Max(0.0, rminf - Math.Sqrt((i - k) * (i - k) + (j - l) * (j - l)));
-            //                sum++;
-            //            }
-            //        }
-            //    }
-            //}
+            int sum = 0;
+            for (int k1 = 1; k1 <= nelz; k1++)
+            {
+                for (int j1 = 1; j1 <= nely; j1++)
+                {
+                    for (int i1 = 1; i1 <= nelx; i1++)
+                    {
+                        //var e1 = (k1 - 1) * nelx * nely + (i1 - 1) * nely + j1;
+                        var e1 = (i1 - 1) * nely * nelz + (j1 - 1) * nelz + k1;
+                        for (int k2 = Math.Max(k1 - rminf - 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
+                        {
+                            for (int j2 = Math.Max(j1 - rminf - 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
+                            {
+                                for (int i2 = Math.Max(i1 - rminf - 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
+                                {
+                                    //var e2 = (k2 - 1) * nelx * nely + (i2 - 1) * nely + j2;
+                                    var e2 = (i2 - 1) * nely * nelz + (j2 - 1) * nelz + k2;
+                                    ih[sum] = e1 - 1;
+                                    jh[sum] = e2 - 1;
+                                    vh[sum] = Math.Max(0.0, rminf - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
+                                    sum++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
-            //GetRowSum(sum, nelx * nely, ih, jh, vh, sh);
+            Wrapper.GetRowSum(sum, nEl, ih, jh, vh, sh);
         }
         private void ADD_DEL(double volfra)
         {
@@ -350,7 +361,7 @@ namespace BESO
                             U[3 * n4], U[3 * n4 + 1], U[3 * n4 + 2] 
                         };
 
-                        double v = TransposeMultiply(24, 24, Ke0, Ue);
+                        double v = Wrapper.TransposeMultiply(24, 24, Ke0, Ue);
 
                         Compliance += 0.5 * Math.Pow(Xe[x * nely * nelz + y * nelz + z], p) * v;
                         dc[x * nely * nelz + y * nelz + z] = 0.5 * Math.Pow(Xe[x * nely * nelz + y * nelz + z], p - 1) * v;
@@ -359,6 +370,7 @@ namespace BESO
             }
         }
 
+        #region Finite element analysis
         private void PreFE3D(int nelx, int nely, int nelz)
         {
             int[,,] nodeNrs = new int[nelx + 1, nely + 1, nelz + 1];
@@ -493,19 +505,13 @@ namespace BESO
 
             var U_freedof = new double[num_freeDofs];
 
-            //for (int i = 0; i < ik.Length; i++)
-            //{
-            //    Console.WriteLine(ik[i].ToString() + '\t' + jk[i].ToString() + '\t' + sk[i].ToString());
-            //}
-
-            Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
+            Wrapper.Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
 
             for (int i = 0; i < num_freeDofs; i++)
             {
                 U[free_dofs[i]] = U_freedof[i];
             }
         }
-
         private void GetKe()
         {
             var E = 1.0;
@@ -570,15 +576,7 @@ namespace BESO
                 }
             }
         }
-
-        [DllImport("Solver.dll")]
-        private static extern void PrintMatrix(int row, int col, double[] val);
-
-        [DllImport("Solver.dll")]
-        private static extern void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int[] free_dofs, int[] ik, int[] jk, double[] vk, double[] F, double[] U);
-
-        [DllImport("Solver.dll")]
-        private static extern double TransposeMultiply(int rows, int cols, double[] A, double[] U);
+        #endregion
 
         #region Debug Methods
         public StringBuilder ModelInfo()

@@ -165,7 +165,7 @@ namespace BESO
             GetKe();
             ik = new int[nelx * nely * 8 * 8];
             jk = new int[nelx * nely * 8 * 8];
-            PreFE(nelx, nely, ik, jk);
+            Wrapper.PreFE(nelx, nely, ik, jk);
             stopwatch.Stop();
             initInfo.Append("PreFE: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
 
@@ -203,7 +203,7 @@ namespace BESO
 
                 #region Flt
                 stopwatch.Restart();
-                Flt(dc.Length, dc, sh);
+                Wrapper.Flt(dc.Length, dc, sh);
 
                 if (iter > 1)
                     for (int j = 0; j < nely; j++)
@@ -294,7 +294,7 @@ namespace BESO
                 }
             }
 
-            GetRowSum(sum, nelx * nely, ih, jh, vh, sh);
+            Wrapper.GetRowSum(sum, nelx * nely, ih, jh, vh, sh);
         }
         private void ADD_DEL(double volfra)
         {
@@ -332,7 +332,7 @@ namespace BESO
                     double[] Ue = { U[2 * n1 - 2], U[2 * n1 - 1], U[2 * n2 - 2], U[2 * n2 - 1],
                     U[2 * n2], U[2 * n2 + 1], U[2 * n1], U[2 * n1 + 1]};
 
-                    double v = TransposeMultiply(8, 8, Ke, Ue);
+                    double v = Wrapper.TransposeMultiply(8, 8, Ke, Ue);
 
                     Compliance += 0.5 * Math.Pow(Xe[ely*nelx + elx], p) * v;
                     dc[elx * nely + ely] = 0.5 * Math.Pow(Xe[ely* nelx + elx], p - 1) * v;
@@ -385,7 +385,7 @@ namespace BESO
             }
 
             var U_freedof = new double[num_freeDofs];
-            Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, vk, F, U_freedof);
+            Wrapper.Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, vk, F, U_freedof);
 
             for (int i = 0; i < num_freeDofs; i++)
             {
@@ -413,19 +413,6 @@ namespace BESO
                 k[6],k[3],k[4],k[1],k[2],k[7],k[0],k[5],
                 k[7],k[2],k[1],k[4],k[3],k[6],k[5],k[0]};
         }
-
-        [DllImport("Solver.dll")]
-        private static extern void PreFE(int nelx, int nely, int[] ik, int[] jk);
-        [DllImport("Solver.dll")]
-        private static extern void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int[] free_dofs, int[] ik, int[] jk, double[] vk, double[] F, double[] U);
-
-        [DllImport("Solver.dll")]
-        private static extern double TransposeMultiply(int rows, int cols, double[] A, double[] U);
-
-        [DllImport("Solver.dll")]
-        private static extern void Flt(int dc_length, double[] dc, double[] sh);
-        [DllImport("Solver.dll")]
-        private static extern void GetRowSum(int coo_length, int rows, int[] ih, int[] jh, double[] vh, double[] sh);
 
         #region Debug Methods
         public StringBuilder ModelInfo()
