@@ -361,7 +361,7 @@ namespace BESO
 
         private void PreFE3D(int nelx, int nely, int nelz)
         {
-            int[,,] nodeNrs = new int[nelz + 1, nely + 1, nelx + 1];
+            int[,,] nodeNrs = new int[nelx + 1, nely + 1, nelz + 1];
 
             for (int z = 0; z < nelz + 1; z++)
             {
@@ -369,7 +369,9 @@ namespace BESO
                 {
                     for (int x = 0; x < nelx + 1; x++)
                     {
-                        nodeNrs[z, y, x] = x * (nelz + 1) * (nely + 1) + z * (nely + 1) + y;
+                        //nodeNrs[x, y, z] = x * (nelz + 1) * (nely + 1) + y * (nelz + 1) + z;
+                        //nodeNrs[x, y, z] = z * (nelx + 1) * (nely + 1) + y * (nelx + 1) + x;
+                        nodeNrs[x, y, z] = y * (nelx + 1) * (nelz + 1) + x * (nelz + 1) + z;
                     }
                 }
             }
@@ -381,7 +383,9 @@ namespace BESO
                 {
                     for (int x = 0; x < nelx; x++)
                     {
-                        cVec[x * nelz * nely + z * nely + y] = 3 * (nodeNrs[z, y, x] + 1) + 1;
+                        //cVec[x * nelz * nely + y * nelz + z] = 3 * (nodeNrs[x, y, z] + 1) + 1;
+                        //cVec[z * nelx * nely + y * nelx + x] = 3 * (nodeNrs[x, y, z] + 1) + 1;
+                        cVec[y * nelx * nelz + x * nelz + z] = 3 * (nodeNrs[x, y, z] + 1) + 1;
                     }
                 }
             }
@@ -398,18 +402,18 @@ namespace BESO
             //    3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1
             //    };
 
-            //int[] edofs = new int[24]
-            //{
-            //    -3, -2, -1,
-            //    0, 1, 2,
-            //    3 * (nely + 1) -3, 3 * (nely + 1) - 2, 3 * (nely + 1) -1,
-            //    3 * (nely + 1), 3 * (nely + 1) + 1, 3 * (nely + 1) + 2,
+            int[] edofs2 = new int[24]{
+                -3, -2, -1,
+                3 * (nely + 1) -3, 3 * (nely + 1) - 2, 3 * (nely + 1) -1,
+                3 * (nely + 1) * (nelz + 2) -3, 3 * (nely + 1) * (nelz + 2) - 2, 3 * (nely + 1) * (nelz + 2) - 1,
+                3 * (nelz + 1) * (nely + 1) - 3, 3 * (nelz + 1) * (nely + 1) - 2, 3 * (nelz + 1) * (nely + 1) - 1,
 
-            //    3 * (nelx + 1) * (nely + 1) - 3, 3 * (nelx + 1) * (nely + 1) - 2, 3 * (nelx + 1) * (nely + 1) - 1,
-            //    3 * (nely + 1) * (nelx + 1), 3 * (nely + 1) * (nelx + 1) + 1, 3 * (nely + 1) * (nelx + 1) + 2,
-            //    3 * (nely + 1) * (nelx + 2) -3, 3 * (nely + 1) * (nelx + 2) - 2, 3 * (nely + 1) * (nelx + 2) - 1,
-            //    3 * (nely + 1) * (nelx + 2), 3 * (nely + 1) * (nelx + 2) + 1, 3 * (nely + 1) * (nelx + 2) + 2
-            //};
+                0, 1, 2,
+                3 * (nely + 1), 3 * (nely + 1) + 1, 3 * (nely + 1) + 2,
+                3 * (nely + 1) * (nelz + 2), 3 * (nely + 1) * (nelz + 2) + 1, 3 * (nely + 1) * (nelz + 2) + 2,
+                3 * (nely + 1) * (nelz + 1), 3 * (nely + 1) * (nelz + 1) + 1, 3 * (nely + 1) * (nelz + 1) + 2
+                };
+
             int[] edofs = new int[24]{
                 -3, -2, -1,
                 3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1,
