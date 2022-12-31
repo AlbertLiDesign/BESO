@@ -327,22 +327,33 @@ namespace BESO
         private void GetDc()
         {
             Compliance = 0.0;
-            for (int y = 0; y < nely; y++)
+            for (int z = 0; z < nelz; z++)
             {
-                for (int z = 0; z < nelz; z++)
+                for (int y = 0; y < nely; y++)
                 {
                     for (int x = 0; x < nelx; x++)
                     {
-                    //    var n1 = (nelz + 1) * (nely + 1) * x + z * (nely + 1) + y + 1;
-                    //    var n2 = (nely + 1) * (elx + 1) + ely + 1;
+                        var n1 = (nelz + 1) * (nely + 1) * x + y * (nelz + 1) + z + 1;
+                        var n2 = (nelz + 1) * (nely + 1) * x + (y + 1) * (nelz + 1) + z + 1;
+                        var n3 = (nelz + 1) * (nely + 1) * (x + 1) + y * (nelz + 1) + z + 1;
+                        var n4 = (nelz + 1) * (nely + 1) * (x + 1) + (y + 1) * (nelz + 1) + z + 1;
 
-                    //    double[] Ue = { U[2 * n1 - 2], U[2 * n1 - 1], U[2 * n2 - 2], U[2 * n2 - 1],
-                    //U[2 * n2], U[2 * n2 + 1], U[2 * n1], U[2 * n1 + 1]};
+                        double[] Ue = 
+                        {
+                            U[3 * n1 - 3], U[3 * n1 - 2], U[3 * n1 - 1],
+                            U[3 * n2 - 3], U[3 * n2 - 2], U[3 * n2 - 1],
+                            U[3 * n3 - 3], U[3 * n3 - 2], U[3 * n3 - 1],
+                            U[3 * n4 - 3], U[3 * n4 - 2], U[3 * n4 - 1],
+                            U[3 * n1], U[3 * n1 + 1], U[3 * n1 + 2],
+                            U[3 * n2], U[3 * n2 + 1], U[3 * n2 + 2],
+                            U[3 * n3], U[3 * n3 + 1], U[3 * n3 + 2],
+                            U[3 * n4], U[3 * n4 + 1], U[3 * n4 + 2] 
+                        };
 
-                        //double v = TransposeMultiply(8, 8, Ke, Ue);
+                        double v = TransposeMultiply(24, 24, Ke0, Ue);
 
-                        //Compliance += 0.5 * Math.Pow(Xe[ely * nelx + elx], p) * v;
-                        //dc[elx * nely + ely] = 0.5 * Math.Pow(Xe[ely * nelx + elx], p - 1) * v;
+                        Compliance += 0.5 * Math.Pow(Xe[x * nely * nelz + y * nelz + z], p) * v;
+                        dc[x * nely * nelz + y * nelz + z] = 0.5 * Math.Pow(Xe[x * nely * nelz + y * nelz + z], p - 1) * v;
                     }
                 }
             }
@@ -350,42 +361,66 @@ namespace BESO
 
         private void PreFE3D(int nelx, int nely, int nelz)
         {
-            int[,,] nodeNrs = new int[nely + 1, nelz + 1, nelx + 1];
+            int[,,] nodeNrs = new int[nelz + 1, nely + 1, nelx + 1];
 
-            for (int y = 0; y < nely + 1; y++)
+            for (int z = 0; z < nelz + 1; z++)
             {
-                for (int z = 0; z < nelz + 1; z++)
+                for (int y = 0; y < nely + 1; y++)
                 {
                     for (int x = 0; x < nelx + 1; x++)
                     {
-                        nodeNrs[y, z, x] = x * (nely + 1) * (nelz + 1) + z * (nely + 1) + y;
+                        nodeNrs[z, y, x] = x * (nelz + 1) * (nely + 1) + z * (nely + 1) + y;
                     }
                 }
             }
 
             int[] cVec = new int[nEl];
-            for (int y = 0; y < nely; y++)
+            for (int z = 0; z < nelz; z++)
             {
-                for (int z = 0; z < nelz; z++)
+                for (int y = 0; y < nely; y++)
                 {
                     for (int x = 0; x < nelx; x++)
                     {
-                        cVec[x * nely * nelz + z * nely + y] = 3 * (nodeNrs[y, z, x] + 1) + 1;
+                        cVec[x * nelz * nely + z * nely + y] = 3 * (nodeNrs[z, y, x] + 1) + 1;
                     }
                 }
             }
 
             int[,] cMat = new int[nEl, 24];
             int[] edofs = new int[24]{
-                0, 1, 2, 
-                3 * (nely + 1) * (nelz + 1), 3 * (nely + 1) * (nelz + 1) + 1, 3 * (nely + 1) * (nelz + 1) + 2, 
-                3 * (nely + 1) * (nelz + 1) - 3, 3 * (nely + 1) * (nelz + 1) - 2, 3 * (nely + 1) * (nelz + 1) - 1, 
-                -3, -2, -1, 
-                3 * (nely + 1), 3 * (nely + 1) + 1, 3 * (nely + 1) + 2,
+                0, 1, 2,
+                3 * (nely + 1) * (nelz + 1), 3 * (nely + 1) * (nelz + 1) + 1, 3 * (nely + 1) * (nelz + 1) + 2,
+                3 * (nely + 1) * (nelz + 1) - 3, 3 * (nely + 1) * (nelz + 1) - 2, 3 * (nely + 1) * (nelz + 1) - 1,
+                -3, -2, -1,
+                3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
                 3 * (nely + 1) * (nelz + 2), 3 * (nely + 1) * (nelz + 2) + 1, 3 * (nely + 1) * (nelz + 2) + 2,
                 3 * (nely + 1) * (nelz + 2) -3, 3 * (nely + 1) * (nelz + 2) - 2, 3 * (nely + 1) * (nelz + 2) - 1,
-                3 * (nely + 1) -3, 3 * (nely + 1) - 2, 3 * (nely + 1) -1
+                3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1
                 };
+
+            //int[] edofs = new int[24]{
+            //    -3, -2, -1,
+            //    0, 1, 2,
+            //    3 * (nely + 1) -3, 3 * (nely + 1) - 2, 3 * (nely + 1) -1,
+            //    3 * (nely + 1), 3 * (nely + 1) + 1, 3 * (nely + 1) + 2,
+
+            //    3 * (nelx + 1) * (nely + 1) - 3, 3 * (nelx + 1) * (nely + 1) - 2, 3 * (nelx + 1) * (nely + 1) - 1,
+            //    3 * (nely + 1) * (nelx + 1), 3 * (nely + 1) * (nelx + 1) + 1, 3 * (nely + 1) * (nelx + 1) + 2,
+            //    3 * (nely + 1) * (nelx + 2) -3, 3 * (nely + 1) * (nelx + 2) - 2, 3 * (nely + 1) * (nelx + 2) - 1,
+            //    3 * (nely + 1) * (nelx + 2), 3 * (nely + 1) * (nelx + 2) + 1, 3 * (nely + 1) * (nelx + 2) + 2
+            //    };
+            //int[] edofs = new int[24]{
+            //    -3, -2, -1,
+            //    3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1,
+            //    3 * (nelz + 1) * (nelx + 2) -3, 3 * (nelz + 1) * (nelx + 2) - 2, 3 * (nelz + 1) * (nelx + 2) - 1,
+            //    3 * (nelx + 1) * (nelz + 1) - 3, 3 * (nelx + 1) * (nelz + 1) - 2, 3 * (nelx + 1) * (nelz + 1) - 1,
+
+            //    0, 1, 2,
+            //    3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
+            //    3 * (nelz + 1) * (nelx + 2), 3 * (nelz + 1) * (nelx + 2) + 1, 3 * (nelz + 1) * (nelx + 2) + 2,
+            //    3 * (nelz + 1) * (nelx + 1), 3 * (nelz + 1) * (nelx + 1) + 1, 3 * (nelz + 1) * (nelx + 1) + 2
+            //    };
+
             for (int i = 0; i < nEl; i++)
             {
                 for (int j = 0; j < 24; j++)
@@ -434,21 +469,21 @@ namespace BESO
         private void FE()
         {
             int num_allDofs = 3 * (nelx + 1) * (nely + 1) * (nelz + 1);
-            int num_fixedDofs = 3 * (nely + 1) * (nelz + 1);
+            int num_fixedDofs = 3 * (nelx + 1) * (nely + 1);
             int num_freeDofs = num_allDofs - num_fixedDofs;
 
             // Assemble stiffness matrix with all DOFs
             sk = new double[300 * nEl];
-            for (int y = 0; y < nely; y++)
+            for (int z = 0; z < nelz; z++)
             {
-                for (int z = 0; z < nelz; z++)
+                for (int y = 0; y < nely; y++)
                 {
                     for (int x = 0; x < nelx; x++)
                     {
-                        var ex = Math.Pow(Xe[x * nely * nelz + z * nely + y], p);
+                        var ex = Math.Pow(Xe[x * nely * nelz + y * nelz + z], p);
                         for (int i = 0; i < 300; i++)
                         {
-                            sk[300 * (x * nely * nelz + z * nely + y) +i] = ex * Ke[i];
+                            sk[300 * (x * nely * nelz + y * nelz + z) +i] = ex * Ke[i];
                         }
                     }
                 }
@@ -478,6 +513,12 @@ namespace BESO
             }
 
             var U_freedof = new double[num_freeDofs];
+
+            for (int i = 0; i < ik.Length; i++)
+            {
+                Console.WriteLine(ik[i].ToString() + '\t' + jk[i].ToString() + '\t' + sk[i].ToString());
+            }
+
             Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
 
             for (int i = 0; i < num_freeDofs; i++)
@@ -556,8 +597,9 @@ namespace BESO
 
         [DllImport("Solver.dll")]
         private static extern void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int[] free_dofs, int[] ik, int[] jk, double[] vk, double[] F, double[] U);
-        //[DllImport("Solver.dll")]
-        //private static extern void PreFE3D(int nelx, int nely, int nelz, int[] ik, int[] jk);
+
+        [DllImport("Solver.dll")]
+        private static extern double TransposeMultiply(int rows, int cols, double[] A, double[] U);
 
         #region Debug Methods
         public StringBuilder ModelInfo()
