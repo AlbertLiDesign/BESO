@@ -19,10 +19,11 @@ namespace BESO
         #endregion
 
         #region FE varialbes
+        private int nEl;
         private double[] U;
         private int[] ik;
         private int[] jk;
-        private double[] vk;
+        private double[] sk;
         #endregion
 
         #region BESO Parameters
@@ -64,6 +65,7 @@ namespace BESO
         /// <summary>
         /// Elemental stiffness matrix
         /// </summary>
+        private double[] Ke0;
         private double[] Ke;
 
         /// <summary>
@@ -132,7 +134,7 @@ namespace BESO
             Xe = (double[])beso.Xe.Clone();
             dc = (double[])beso.dc.Clone();
             dc_old = (double[])beso.dc_old.Clone();
-            Ke = (double[])beso.Ke.Clone();
+            Ke0 = (double[])beso.Ke0.Clone();
 
             ih = (int[])beso.ih.Clone();
             jh = (int[])beso.jh.Clone();
@@ -150,24 +152,23 @@ namespace BESO
 
         public void Initialize(int nelx, int nely, int nelz)
         {
+            nEl = nelx * nely * nelz;
             initInfo = new StringBuilder("====================== Launch BESO ======================" + '\n');
 
             this.nelx = nelx;
             this.nely = nely;
             this.nelz = nelz;
 
-            dc = new double[nelx * nely * nelz];
-            dc_old = new double[nelx * nely * nelz];
-            Xe = new double[nelx * nely * nelz];
+            dc = new double[nEl];
+            dc_old = new double[nEl];
+            Xe = new double[nEl];
 
             Array.Fill(Xe, 1);
 
             stopwatch.Start();
             GetKe();
-            ik = new int[nelx * nely * nelz * 24 * 24];
-            jk = new int[nelx * nely * nelz * 24 * 24];
 
-            PreFE3D(nelx, nely, nelz, ik, jk);
+            PreFE3D(nelx, nely, nelz);
             stopwatch.Stop();
             initInfo.Append("PreFE: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
 
@@ -326,61 +327,66 @@ namespace BESO
         private void GetDc()
         {
             Compliance = 0.0;
-            for (int ely = 0; ely < nely; ely++)
+            for (int y = 0; y < nely; y++)
             {
-                for (int elx = 0; elx < nelx; elx++)
+                for (int z = 0; z < nelz; z++)
                 {
-                    var n1 = (nely + 1) * elx + ely + 1;
-                    var n2 = (nely + 1) * (elx + 1) + ely + 1;
+                    for (int x = 0; x < nelx; x++)
+                    {
+                    //    var n1 = (nelz + 1) * (nely + 1) * x + z * (nely + 1) + y + 1;
+                    //    var n2 = (nely + 1) * (elx + 1) + ely + 1;
 
-                    double[] Ue = { U[2 * n1 - 2], U[2 * n1 - 1], U[2 * n2 - 2], U[2 * n2 - 1],
-                    U[2 * n2], U[2 * n2 + 1], U[2 * n1], U[2 * n1 + 1]};
+                    //    double[] Ue = { U[2 * n1 - 2], U[2 * n1 - 1], U[2 * n2 - 2], U[2 * n2 - 1],
+                    //U[2 * n2], U[2 * n2 + 1], U[2 * n1], U[2 * n1 + 1]};
 
-                    //double v = TransposeMultiply(8, 8, Ke, Ue);
+                        //double v = TransposeMultiply(8, 8, Ke, Ue);
 
-                    //Compliance += 0.5 * Math.Pow(Xe[ely * nelx + elx], p) * v;
-                    //dc[elx * nely + ely] = 0.5 * Math.Pow(Xe[ely * nelx + elx], p - 1) * v;
+                        //Compliance += 0.5 * Math.Pow(Xe[ely * nelx + elx], p) * v;
+                        //dc[elx * nely + ely] = 0.5 * Math.Pow(Xe[ely * nelx + elx], p - 1) * v;
+                    }
                 }
             }
         }
 
-        private void PreFE3D(int nelx, int nely, int nelz, int[] ik, int[] jk)
+        private void PreFE3D(int nelx, int nely, int nelz)
         {
-            int[,,] nodeNrs = new int[nelz + 1, nely + 1, nelx + 1];
-            int[] cVec = new int[nelx * nely * nelz];
-            double[,] cMat = new double[nelx* nely *nelz, 24];
-            int[] edofs = new int[24]{ 
-                0, 1, 2, 3 * (nely + 1) * (nelz + 1), 3 * (nely + 1) * (nelz + 1) + 1,
-                3 * (nely + 1) * (nelz + 1) + 2, 3 * (nely + 1) * (nelz + 1) - 3, 3 * (nely + 1) * (nelz + 1) - 2,
-                3 * (nely + 1) * (nelz + 1) - 1, -3, -2, -1, 3 * (nely + 1), 3 * (nely + 1) + 1, 3 * (nely + 1) + 2,
+            int[,,] nodeNrs = new int[nely + 1, nelz + 1, nelx + 1];
+
+            for (int y = 0; y < nely + 1; y++)
+            {
+                for (int z = 0; z < nelz + 1; z++)
+                {
+                    for (int x = 0; x < nelx + 1; x++)
+                    {
+                        nodeNrs[y, z, x] = x * (nely + 1) * (nelz + 1) + z * (nely + 1) + y;
+                    }
+                }
+            }
+
+            int[] cVec = new int[nEl];
+            for (int y = 0; y < nely; y++)
+            {
+                for (int z = 0; z < nelz; z++)
+                {
+                    for (int x = 0; x < nelx; x++)
+                    {
+                        cVec[x * nely * nelz + z * nely + y] = 3 * (nodeNrs[y, z, x] + 1) + 1;
+                    }
+                }
+            }
+
+            int[,] cMat = new int[nEl, 24];
+            int[] edofs = new int[24]{
+                0, 1, 2, 
+                3 * (nely + 1) * (nelz + 1), 3 * (nely + 1) * (nelz + 1) + 1, 3 * (nely + 1) * (nelz + 1) + 2, 
+                3 * (nely + 1) * (nelz + 1) - 3, 3 * (nely + 1) * (nelz + 1) - 2, 3 * (nely + 1) * (nelz + 1) - 1, 
+                -3, -2, -1, 
+                3 * (nely + 1), 3 * (nely + 1) + 1, 3 * (nely + 1) + 2,
                 3 * (nely + 1) * (nelz + 2), 3 * (nely + 1) * (nelz + 2) + 1, 3 * (nely + 1) * (nelz + 2) + 2,
                 3 * (nely + 1) * (nelz + 2) -3, 3 * (nely + 1) * (nelz + 2) - 2, 3 * (nely + 1) * (nelz + 2) - 1,
                 3 * (nely + 1) -3, 3 * (nely + 1) - 2, 3 * (nely + 1) -1
                 };
-
-            for (int z = 0; z < nelz + 1; z++)
-            {
-                for (int y = 0; y < nely + 1; y++)
-                {
-                    for (int x = 0; x < nelx + 1; x++)
-                    {
-                        nodeNrs[z, y, x] = x * (nely + 1) * (nelz + 1) + y * (nelz + 1) + z;
-                    }
-                }
-            }
-
-            for (int z = 0; z < nelz; z++)
-            {
-                for (int y = 0; y < nely; y++)
-                {
-                    for (int x = 0; x < nelx; x++)
-                    {
-                        cVec[x * nely * nelz + y * nelz + z] = 3 * nodeNrs[z, y, x] + 1;
-                    }
-                }
-            }
-
-            for (int i = 0; i < nelx * nely * nelz; i++)
+            for (int i = 0; i < nEl; i++)
             {
                 for (int j = 0; j < 24; j++)
                 {
@@ -388,8 +394,8 @@ namespace BESO
                 }
             }
 
-            var sI = new double[300];
-            var sII = new double[300];
+            var sI = new int[300];
+            var sII = new int[300];
             int num = 0;
             int num2 = 0;
             for (int i = 0; i < 24; i++)
@@ -403,22 +409,57 @@ namespace BESO
                 num2++;
             }
 
+            ik = new int[300 * nEl];
+            jk = new int[300 * nEl];
 
-            //var mat = DenseMatrix.OfArray(cMat);
-            //Console.WriteLine(mat);
+            for (int j = 0; j < nEl; j++)
+            {
+                for (int i = 0; i < 300; i++)
+                {
+                    var a = cMat[j, sI[i]] - 1;
+                    var b = cMat[j, sII[i]] - 1;
+                    if (a >= b)
+                    {
+                        ik[j * 300 + i] = a;
+                        jk[j * 300 + i] = b;
+                    }
+                    else
+                    {
+                        ik[j * 300 + i] = b;
+                        jk[j * 300 + i] = a;
+                    }
+                }
+            }
         }
         private void FE()
         {
             int num_allDofs = 3 * (nelx + 1) * (nely + 1) * (nelz + 1);
-            int num_fixedDofs = 3 * (nely + 1) * (nelx + 1);
+            int num_fixedDofs = 3 * (nely + 1) * (nelz + 1);
             int num_freeDofs = num_allDofs - num_fixedDofs;
+
+            // Assemble stiffness matrix with all DOFs
+            sk = new double[300 * nEl];
+            for (int y = 0; y < nely; y++)
+            {
+                for (int z = 0; z < nelz; z++)
+                {
+                    for (int x = 0; x < nelx; x++)
+                    {
+                        var ex = Math.Pow(Xe[x * nely * nelz + z * nely + y], p);
+                        for (int i = 0; i < 300; i++)
+                        {
+                            sk[300 * (x * nely * nelz + z * nely + y) +i] = ex * Ke[i];
+                        }
+                    }
+                }
+            }
 
             var F = new double[num_allDofs];
             U = new double[num_allDofs];
 
             // Define force vector
-            int forceID = (int)Math.Floor((nely + 1) * (nelx + 1) * 0.5);
-            F[forceID * 3] = -1.0;
+            int forceID = (int)Math.Floor((nely + 1) * (nelx + 1) * 0.5) + 1;
+            F[forceID * 3 - 1] = -1.0;
 
             if (changeSupports)
             {
@@ -437,7 +478,7 @@ namespace BESO
             }
 
             var U_freedof = new double[num_freeDofs];
-            //Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, vk, F, U_freedof);
+            Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
 
             for (int i = 0; i < num_freeDofs; i++)
             {
@@ -478,12 +519,12 @@ namespace BESO
             0, 48, 0, 0, 0, -24, 0, -12, 0, -12, 48, 0, 24, 0, 24, 0, -12, 12, 48, 0, -24, 0, 12, -12, -12,
             48, 0, 0, 0, -24, -24, 48, 0, 24, 0, 0, 48, 24, 0, 0, 48, 0, 0, 48, 0, 48};
 
-            var p = new double[300];
+            Ke = new double[300];
             for (int i = 0; i < 300; i++)
-                p[i] = w * (p1[i] + nu * p2[i]);
+                Ke[i] = E * w * (p1[i] + nu * p2[i]);
 
 
-            Ke = new double[24 * 24];
+            Ke0 = new double[24 * 24];
 
             int num = 0;
             for (int i = 0; i < 24; i++)
@@ -492,7 +533,7 @@ namespace BESO
                 {
                     if (i<= j)
                     {
-                        Ke[i * 24 + j] = p[num];
+                        Ke0[i * 24 + j] = Ke[num];
                         num++;
                     }
                 }
@@ -504,15 +545,17 @@ namespace BESO
                 {
                     if (i > j)
                     {
-                        Ke[i * 24 + j] = Ke[j * 24 + i];
+                        Ke0[i * 24 + j] = Ke0[j * 24 + i];
                     }
                 }
             }
         }
 
         [DllImport("Solver.dll")]
-        private static extern void WriteMatrix(int row, int col, double[] val);
+        private static extern void PrintMatrix(int row, int col, double[] val);
 
+        [DllImport("Solver.dll")]
+        private static extern void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int[] free_dofs, int[] ik, int[] jk, double[] vk, double[] F, double[] U);
         //[DllImport("Solver.dll")]
         //private static extern void PreFE3D(int nelx, int nely, int nelz, int[] ik, int[] jk);
 

@@ -12,11 +12,11 @@ namespace BESO
         private static void testBESO3D()
         {
             BESO3D beso = new BESO3D(3.0, 0.5);
-            beso.Initialize(24, 12, 11);
+            beso.Initialize(10, 10, 10);
 
             Console.WriteLine(beso.ModelInfo());
             beso.Optimize();
-            //Console.WriteLine(beso.info);
+            Console.WriteLine(beso.info);
 
             //while (!beso.convergence)
             //{
