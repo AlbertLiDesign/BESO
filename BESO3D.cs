@@ -387,18 +387,19 @@ namespace BESO
             }
 
             int[,] cMat = new int[nEl, 24];
-            int[] edofs = new int[24]{
-                0, 1, 2,
-                3 * (nely + 1) * (nelz + 1), 3 * (nely + 1) * (nelz + 1) + 1, 3 * (nely + 1) * (nelz + 1) + 2,
-                3 * (nely + 1) * (nelz + 1) - 3, 3 * (nely + 1) * (nelz + 1) - 2, 3 * (nely + 1) * (nelz + 1) - 1,
-                -3, -2, -1,
-                3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
-                3 * (nely + 1) * (nelz + 2), 3 * (nely + 1) * (nelz + 2) + 1, 3 * (nely + 1) * (nelz + 2) + 2,
-                3 * (nely + 1) * (nelz + 2) -3, 3 * (nely + 1) * (nelz + 2) - 2, 3 * (nely + 1) * (nelz + 2) - 1,
-                3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1
-                };
-
             //int[] edofs = new int[24]{
+            //    0, 1, 2,
+            //    3 * (nely + 1) * (nelz + 1), 3 * (nely + 1) * (nelz + 1) + 1, 3 * (nely + 1) * (nelz + 1) + 2,
+            //    3 * (nely + 1) * (nelz + 1) - 3, 3 * (nely + 1) * (nelz + 1) - 2, 3 * (nely + 1) * (nelz + 1) - 1,
+            //    -3, -2, -1,
+            //    3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
+            //    3 * (nely + 1) * (nelz + 2), 3 * (nely + 1) * (nelz + 2) + 1, 3 * (nely + 1) * (nelz + 2) + 2,
+            //    3 * (nely + 1) * (nelz + 2) -3, 3 * (nely + 1) * (nelz + 2) - 2, 3 * (nely + 1) * (nelz + 2) - 1,
+            //    3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1
+            //    };
+
+            //int[] edofs = new int[24]
+            //{
             //    -3, -2, -1,
             //    0, 1, 2,
             //    3 * (nely + 1) -3, 3 * (nely + 1) - 2, 3 * (nely + 1) -1,
@@ -408,18 +409,18 @@ namespace BESO
             //    3 * (nely + 1) * (nelx + 1), 3 * (nely + 1) * (nelx + 1) + 1, 3 * (nely + 1) * (nelx + 1) + 2,
             //    3 * (nely + 1) * (nelx + 2) -3, 3 * (nely + 1) * (nelx + 2) - 2, 3 * (nely + 1) * (nelx + 2) - 1,
             //    3 * (nely + 1) * (nelx + 2), 3 * (nely + 1) * (nelx + 2) + 1, 3 * (nely + 1) * (nelx + 2) + 2
-            //    };
-            //int[] edofs = new int[24]{
-            //    -3, -2, -1,
-            //    3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1,
-            //    3 * (nelz + 1) * (nelx + 2) -3, 3 * (nelz + 1) * (nelx + 2) - 2, 3 * (nelz + 1) * (nelx + 2) - 1,
-            //    3 * (nelx + 1) * (nelz + 1) - 3, 3 * (nelx + 1) * (nelz + 1) - 2, 3 * (nelx + 1) * (nelz + 1) - 1,
+            //};
+            int[] edofs = new int[24]{
+                -3, -2, -1,
+                3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1,
+                3 * (nelz + 1) * (nelx + 2) -3, 3 * (nelz + 1) * (nelx + 2) - 2, 3 * (nelz + 1) * (nelx + 2) - 1,
+                3 * (nelx + 1) * (nelz + 1) - 3, 3 * (nelx + 1) * (nelz + 1) - 2, 3 * (nelx + 1) * (nelz + 1) - 1,
 
-            //    0, 1, 2,
-            //    3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
-            //    3 * (nelz + 1) * (nelx + 2), 3 * (nelz + 1) * (nelx + 2) + 1, 3 * (nelz + 1) * (nelx + 2) + 2,
-            //    3 * (nelz + 1) * (nelx + 1), 3 * (nelz + 1) * (nelx + 1) + 1, 3 * (nelz + 1) * (nelx + 1) + 2
-            //    };
+                0, 1, 2,
+                3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
+                3 * (nelz + 1) * (nelx + 2), 3 * (nelz + 1) * (nelx + 2) + 1, 3 * (nelz + 1) * (nelx + 2) + 2,
+                3 * (nelz + 1) * (nelx + 1), 3 * (nelz + 1) * (nelx + 1) + 1, 3 * (nelz + 1) * (nelx + 1) + 2
+                };
 
             for (int i = 0; i < nEl; i++)
             {
@@ -514,10 +515,10 @@ namespace BESO
 
             var U_freedof = new double[num_freeDofs];
 
-            for (int i = 0; i < ik.Length; i++)
-            {
-                Console.WriteLine(ik[i].ToString() + '\t' + jk[i].ToString() + '\t' + sk[i].ToString());
-            }
+            //for (int i = 0; i < ik.Length; i++)
+            //{
+            //    Console.WriteLine(ik[i].ToString() + '\t' + jk[i].ToString() + '\t' + sk[i].ToString());
+            //}
 
             Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
 
