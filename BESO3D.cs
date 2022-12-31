@@ -333,10 +333,10 @@ namespace BESO
                 {
                     for (int x = 0; x < nelx; x++)
                     {
-                        var n1 = (nelz + 1) * (nely + 1) * x + y * (nelz + 1) + z + 1;
-                        var n2 = (nelz + 1) * (nely + 1) * x + (y + 1) * (nelz + 1) + z + 1;
-                        var n3 = (nelz + 1) * (nely + 1) * (x + 1) + y * (nelz + 1) + z + 1;
-                        var n4 = (nelz + 1) * (nely + 1) * (x + 1) + (y + 1) * (nelz + 1) + z + 1;
+                        var n1 = (nelx + 1) * (nelz + 1) * y + x * (nelz + 1) + z + 1;
+                        var n2 = (nelx + 1) * (nelz + 1) * y + (x + 1) * (nelz + 1) + z + 1;
+                        var n3 = (nelx + 1) * (nelz + 1) * (y + 1) + (x + 1) * (nelz + 1) + z + 1;
+                        var n4 = (nelx + 1) * (nelz + 1) * (y + 1) + x * (nelz + 1) + z + 1;
 
                         double[] Ue = 
                         {
@@ -369,8 +369,6 @@ namespace BESO
                 {
                     for (int x = 0; x < nelx + 1; x++)
                     {
-                        //nodeNrs[x, y, z] = x * (nelz + 1) * (nely + 1) + y * (nelz + 1) + z;
-                        //nodeNrs[x, y, z] = z * (nelx + 1) * (nely + 1) + y * (nelx + 1) + x;
                         nodeNrs[x, y, z] = y * (nelx + 1) * (nelz + 1) + x * (nelz + 1) + z;
                     }
                 }
@@ -383,36 +381,12 @@ namespace BESO
                 {
                     for (int x = 0; x < nelx; x++)
                     {
-                        //cVec[x * nelz * nely + y * nelz + z] = 3 * (nodeNrs[x, y, z] + 1) + 1;
-                        //cVec[z * nelx * nely + y * nelx + x] = 3 * (nodeNrs[x, y, z] + 1) + 1;
                         cVec[y * nelx * nelz + x * nelz + z] = 3 * (nodeNrs[x, y, z] + 1) + 1;
                     }
                 }
             }
 
             int[,] cMat = new int[nEl, 24];
-            //int[] edofs = new int[24]{
-            //    0, 1, 2,
-            //    3 * (nely + 1) * (nelz + 1), 3 * (nely + 1) * (nelz + 1) + 1, 3 * (nely + 1) * (nelz + 1) + 2,
-            //    3 * (nely + 1) * (nelz + 1) - 3, 3 * (nely + 1) * (nelz + 1) - 2, 3 * (nely + 1) * (nelz + 1) - 1,
-            //    -3, -2, -1,
-            //    3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
-            //    3 * (nely + 1) * (nelz + 2), 3 * (nely + 1) * (nelz + 2) + 1, 3 * (nely + 1) * (nelz + 2) + 2,
-            //    3 * (nely + 1) * (nelz + 2) -3, 3 * (nely + 1) * (nelz + 2) - 2, 3 * (nely + 1) * (nelz + 2) - 1,
-            //    3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1
-            //    };
-
-            int[] edofs2 = new int[24]{
-                -3, -2, -1,
-                3 * (nely + 1) -3, 3 * (nely + 1) - 2, 3 * (nely + 1) -1,
-                3 * (nely + 1) * (nelz + 2) -3, 3 * (nely + 1) * (nelz + 2) - 2, 3 * (nely + 1) * (nelz + 2) - 1,
-                3 * (nelz + 1) * (nely + 1) - 3, 3 * (nelz + 1) * (nely + 1) - 2, 3 * (nelz + 1) * (nely + 1) - 1,
-
-                0, 1, 2,
-                3 * (nely + 1), 3 * (nely + 1) + 1, 3 * (nely + 1) + 2,
-                3 * (nely + 1) * (nelz + 2), 3 * (nely + 1) * (nelz + 2) + 1, 3 * (nely + 1) * (nelz + 2) + 2,
-                3 * (nely + 1) * (nelz + 1), 3 * (nely + 1) * (nelz + 1) + 1, 3 * (nely + 1) * (nelz + 1) + 2
-                };
 
             int[] edofs = new int[24]{
                 -3, -2, -1,
