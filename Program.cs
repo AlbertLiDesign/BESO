@@ -12,19 +12,18 @@ namespace BESO
         private static void testBESO3D()
         {
             BESO3D beso = new BESO3D(3.0, 0.5);
-            beso.Initialize(3, 2, 4);
+            beso.Initialize(4, 3, 2);
 
             Console.WriteLine(beso.ModelInfo());
-            beso.Optimize();
-            Console.WriteLine(beso.info);
+            //beso.Optimize();
+            //Console.WriteLine(beso.info);
 
-            //while (!beso.convergence)
-            //{
-            //    beso.Optimize();
-            //    Console.WriteLine(beso.info);
-
-            //    //beso.WriteXe(@"E:\TestData");
-            //}
+            while (!beso.convergence)
+            {
+                beso.Optimize();
+                Console.WriteLine(beso.info);
+                //beso.WriteXe(@"E:\TestData");
+            }
             //Console.WriteLine(beso.optInfo);
             Console.ReadKey();
         }
