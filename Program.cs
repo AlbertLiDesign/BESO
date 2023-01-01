@@ -22,10 +22,9 @@ namespace BESO
             {
                 beso.Optimize();
                 Console.WriteLine(beso.info);
-
                 //beso.WriteXe(@"E:\TestData");
             }
-            Console.WriteLine(beso.optInfo);
+            //Console.WriteLine(beso.optInfo);
             Console.ReadKey();
         }
 

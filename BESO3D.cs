@@ -468,20 +468,14 @@ namespace BESO
                     for (int x = 0; x < nelx; x++)
                     {
                         var id = x * nely * nelz + y * nelz + z;
-                        //var id = x * nely * nelz + z * nely + y;
-                        //var id = y * nelx * nelz + x * nelz + z;
-                        //var id = y * nelx * nelz + z * nelx + x;
-                        //var id = z * nelx * nely + x * nely + y;
-                        //var id = z * nelx * nely + y * nelx + x;
                         var ex = Xe[id] == 1 ? 1.0 : 1e-9;
                         for (int i = 0; i < 300; i++)
                         {
-                            sk[300 * id + i] = ex * Ke0[i];
+                            sk[300 * id + i] = ex * Ke[i];
                         }
                     }
                 }
             }
-
 
             var F = new double[num_allDofs];
             U = new double[num_allDofs];
