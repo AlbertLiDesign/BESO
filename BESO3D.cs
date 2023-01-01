@@ -265,7 +265,7 @@ namespace BESO
         {
             int rminf = (int)Math.Floor(rmin);
 
-            ih = new int[(int)(nEl * Math.Pow((2 * rminf - 1), 2))];
+            ih = new int[(int)(nEl * Math.Pow((3 * rminf - 1), 3))];
             jh = new int[ih.Length];
             vh = new double[ih.Length];
             sh = new double[nEl];

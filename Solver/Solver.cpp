@@ -21,7 +21,31 @@ void PrintMatrix(int row, int col, double* val)
     cout << K << std::endl;
 }
 
+void Cal_ik_jk(int nEl, int* edofMat, int* ik, int* jk)
+{
+    MatrixXi A = Map<MatrixXi>(edofMat, nEl, 24);
 
+    auto a = kroneckerProduct(A, MatrixXi::Ones(24, 1)).eval();
+    auto za = a.transpose();
+    auto b = kroneckerProduct(A, MatrixXi::Ones(1, 24)).eval();
+    auto zb = b.transpose();
+
+    for (size_t i = 0; i < za.cols(); i++)
+    {
+        for (size_t j = 0; j < za.rows(); j++)
+        {
+            ik[i * za.rows() + j] = za(j, i);
+        }
+    }
+
+    for (size_t i = 0; i < zb.cols(); i++)
+    {
+        for (size_t j = 0; j < zb.rows(); j++)
+        {
+            jk[i * zb.rows() + j] = zb(j, i);
+        }
+    }
+}
 void PreFE(int nelx, int nely, int* ik, int* jk)
 {
     MatrixXi nodenrs(nely + 1, nelx + 1);
