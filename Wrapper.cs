@@ -25,5 +25,9 @@ namespace BESO
         public static extern void Flt(int dc_length, double[] dc, double[] sh);
         [DllImport("Solver.dll")]
         public static extern void GetRowSum(int coo_length, int rows, int[] ih, int[] jh, double[] vh, double[] sh);
+
+        [DllImport("Solver.dll")]
+        public static extern void Cal_ik_jk(int nEl, int[] edofMat, int[] ik, int[] jk);
     }
+
 }

@@ -13,6 +13,7 @@
 #include <cholmod.h>
 #include<time.h> 
 
+
 extern "C" __declspec(dllexport) void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, 
 	int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U);
 
@@ -24,3 +25,5 @@ extern "C" __declspec(dllexport) void GetRowSum(int coo_length, int rows, int* i
 extern "C" __declspec(dllexport) void Flt(int dc_length, double* dc, double* sh);
 
 extern "C" __declspec(dllexport) void PrintMatrix(int row, int col, double* val);
+
+extern "C" __declspec(dllexport) void Cal_ik_jk(int nEl, int* edofMat, int* ik, int* jk);
