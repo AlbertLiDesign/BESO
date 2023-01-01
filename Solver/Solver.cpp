@@ -82,6 +82,7 @@ void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* fr
     std::vector<Triplet<double>> triplets;
     triplets.reserve(num_triplets);
 
+    std::cout << sk[1500] << std::endl;
     for (int i = 0; i < num_triplets; i++)
     {
         triplets.push_back(Triplet<double>(ik[i], jk[i], sk[i]));
@@ -102,6 +103,9 @@ void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* fr
     P.setFromTriplets(P_triplets.begin(), P_triplets.end());
 
     SparseMatrix<double> K_freedof = P * K * P.transpose();
+
+    auto KD = MatrixXd(K_freedof);
+    std::cout << KD(94, 94) << std::endl;
     //Eigen::saveMarket(K_freedof, "mat.mtx");
 
     VectorXd F_freedof(num_freeDofs);

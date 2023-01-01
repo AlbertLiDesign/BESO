@@ -15,17 +15,17 @@ namespace BESO
             beso.Initialize(4, 3, 2);
 
             Console.WriteLine(beso.ModelInfo());
-            beso.Optimize();
-            Console.WriteLine(beso.info);
+            //beso.Optimize();
+            //Console.WriteLine(beso.info);
 
-            //while (!beso.convergence)
-            //{
-            //    beso.Optimize();
-            //    Console.WriteLine(beso.info);
+            while (!beso.convergence)
+            {
+                beso.Optimize();
+                Console.WriteLine(beso.info);
 
-            //    //beso.WriteXe(@"E:\TestData");
-            //}
-            //Console.WriteLine(beso.optInfo);
+                //beso.WriteXe(@"E:\TestData");
+            }
+            Console.WriteLine(beso.optInfo);
             Console.ReadKey();
         }
 

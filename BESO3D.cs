@@ -39,11 +39,6 @@ namespace BESO
         public double vf;
 
         /// <summary>
-        /// Penalty exponent
-        /// </summary>
-        public double p;
-
-        /// <summary>
         /// Evolution rate
         /// </summary>
         public double ert;
@@ -68,12 +63,6 @@ namespace BESO
         /// </summary>
         private double[] Ke0;
         private double[] Ke;
-
-        /// <summary>
-        /// The minimum design variable
-        /// </summary>
-        private double Xmin = 0.001;
-
         /// <summary>
         /// The iterative history of the global compliance
         /// </summary>
@@ -107,7 +96,7 @@ namespace BESO
 
         #region Constructors
         public BESO3D() { }
-        public BESO3D(double rmin, double vf, double ert = 0.02, double p = 3.0, int maxIter = 100)
+        public BESO3D(double rmin, double vf, double ert = 0.02, int maxIter = 100)
         {
             if (rmin <= 0.0)
                 throw new Exception("Rmin must be large than 0.");
@@ -115,7 +104,6 @@ namespace BESO
                 throw new Exception("Vt must be large than 0 and be less than 1.");
 
             this.vf = vf;
-            this.p = p;
             this.ert = ert;
             this.maxIter = maxIter;
             this.rmin = rmin;
@@ -126,7 +114,6 @@ namespace BESO
         public BESO3D(BESO3D beso)
         {
             vf = beso.vf;
-            p = beso.p;
             ert = beso.ert;
             maxIter = beso.maxIter;
             rmin = beso.rmin;
@@ -215,16 +202,16 @@ namespace BESO
                 Wrapper.Flt(dc.Length, dc, sh);
 
                 if (iter > 1)
-                    for (int j = 0; j < nely; j++)
-                    {
-                        for (int i = 0; i < nelx; i++)
-                        {
-                            dc[i * nely + j] = (dc[i * nely + j] + dc_old[i * nely + j]) * 0.5;
-                        }
-                    }
+                    for (int k = 0; k < nelz; k++)
+                        for (int j = 0; j < nely; j++)
+                            for (int i = 0; i < nelx; i++)
+                            {
+                                int id = i * nely * nelz + j * nelz + k;
+                                dc[id] = (dc[id] + dc_old[id]) * 0.5;
+                            }
 
                 // Record the sensitiveies in each step
-                
+
                 stopwatch.Stop();
                 #endregion
                 #region Prepare report
@@ -318,17 +305,21 @@ namespace BESO
             double lowest = dc.Min();
             double highest = dc.Max();
             double th = 0.0;
-            double vol = volfra * nelx * nely;
+            double vol = volfra * nEl;
             while (((highest - lowest) / highest) > 1e-5)
             {
                 th = (highest + lowest) * 0.5;
                 double sum = 0.0;
-                for (int j = 0; j < nely; j++)
+                for (int k = 0; k < nelz; k++)
                 {
-                    for (int i = 0; i < nelx; i++)
+                    for (int j = 0; j < nely; j++)
                     {
-                        Xe[j * nelx + i] = dc[i * nely + j] > th ? 1.0 : Xmin;
-                        sum += Xe[j * nelx + i];
+                        for (int i = 0; i < nelx; i++)
+                        {
+                            int id = i * nely * nelz + j * nelz + k;
+                            Xe[id] = dc[id] > th ? 1.0 : 1e-3;
+                            sum += Xe[j * nelx + i];
+                        }
                     }
                 }
                 if (sum - vol > 0.0) lowest = th;
@@ -363,8 +354,11 @@ namespace BESO
 
                         double v = Wrapper.TransposeMultiply(24, 24, Ke0, Ue);
 
-                        Compliance += 0.5 * Math.Pow(Xe[x * nely * nelz + y * nelz + z], p) * v;
-                        dc[x * nely * nelz + y * nelz + z] = 0.5 * Math.Pow(Xe[x * nely * nelz + y * nelz + z], p - 1) * v;
+                        int id = x * nely * nelz + y * nelz + z;
+                        var p1 = Xe[id] == 1 ? 1.0 : 1e-9;
+                        var p2 = Xe[id] == 1 ? 1.0 : 1e-6;
+                        Compliance += 0.5 * p1 * v;
+                        dc[id] = 0.5 * p2 * v;
                     }
                 }
             }
@@ -382,6 +376,7 @@ namespace BESO
                     for (int x = 0; x < nelx + 1; x++)
                     {
                         nodeNrs[x, y, z] = y * (nelx + 1) * (nelz + 1) + x * (nelz + 1) + z;
+                        //nodeNrs[x, y, z] = x * (nely + 1) * (nelz + 1) + y * (nelz + 1) + z;
                     }
                 }
             }
@@ -394,6 +389,7 @@ namespace BESO
                     for (int x = 0; x < nelx; x++)
                     {
                         cVec[y * nelx * nelz + x * nelz + z] = 3 * (nodeNrs[x, y, z] + 1) + 1;
+                        //cVec[x * nely * nelz + y * nelz + z] = 3 * (nodeNrs[x, y, z] + 1) + 1;
                     }
                 }
             }
@@ -471,14 +467,21 @@ namespace BESO
                 {
                     for (int x = 0; x < nelx; x++)
                     {
-                        var ex = Math.Pow(Xe[x * nely * nelz + y * nelz + z], p);
+                        var id = x * nely * nelz + y * nelz + z;
+                        //var id = x * nely * nelz + z * nely + y;
+                        //var id = y * nelx * nelz + x * nelz + z;
+                        //var id = y * nelx * nelz + z * nelx + x;
+                        //var id = z * nelx * nely + x * nely + y;
+                        //var id = z * nelx * nely + y * nelx + x;
+                        var ex = Xe[id] == 1 ? 1.0 : 1e-9;
                         for (int i = 0; i < 300; i++)
                         {
-                            sk[300 * (x * nely * nelz + y * nelz + z) +i] = ex * Ke[i];
+                            sk[300 * id + i] = ex * Ke0[i];
                         }
                     }
                 }
             }
+
 
             var F = new double[num_allDofs];
             U = new double[num_allDofs];
