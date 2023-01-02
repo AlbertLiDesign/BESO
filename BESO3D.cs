@@ -263,57 +263,25 @@ namespace BESO
             jh = new int[ih.Length];
             vh = new double[ih.Length];
             sh = new double[nEl];
-
             int sum = 0;
-            if (parallel)
+            for (int k1 = 1; k1 <= nelz; k1++)
             {
-                Parallel.For(1, nelx + 1, i1 =>
+                for (int j1 = 1; j1 <= nely; j1++)
                 {
-                    for (int k1 = 1; k1 <= nelz; k1++)
+                    for (int i1 = 1; i1 <= nelx; i1++)
                     {
-                        for (int j1 = 1; j1 <= nely; j1++)
+                        var e1 = (k1 - 1) * nelx * nely + (j1 - 1) * nelx + i1;
+                        for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
                         {
-                            var e1 = (k1 - 1) * nelx * nely + (j1 - 1) * nelx + i1;
-                            for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
+                            for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
                             {
-                                for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
+                                for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
                                 {
-                                    for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
-                                    {
-                                        var e2 = (k2 - 1) * nelx * nely + (j2 - 1) * nelx + i2;
-                                        ih[sum] = e1 - 1;
-                                        jh[sum] = e2 - 1;
-                                        vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
-                                        sum++;
-                                    }
-                                }
-                            }
-
-                        }
-                    }
-                });
-            }
-            else
-            {
-                for (int k1 = 1; k1 <= nelz; k1++)
-                {
-                    for (int j1 = 1; j1 <= nely; j1++)
-                    {
-                        for (int i1 = 1; i1 <= nelx; i1++)
-                        {
-                            var e1 = (k1 - 1) * nelx * nely + (j1 - 1) * nelx + i1;
-                            for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
-                            {
-                                for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
-                                {
-                                    for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
-                                    {
-                                        var e2 = (k2 - 1) * nelx * nely + (j2 - 1) * nelx + i2;
-                                        ih[sum] = e1 - 1;
-                                        jh[sum] = e2 - 1;
-                                        vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
-                                        sum++;
-                                    }
+                                    var e2 = (k2 - 1) * nelx * nely + (j2 - 1) * nelx + i2;
+                                    ih[sum] = e1 - 1;
+                                    jh[sum] = e2 - 1;
+                                    vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
+                                    sum++;
                                 }
                             }
                         }
@@ -347,26 +315,28 @@ namespace BESO
             Compliance = 0.0;
             if (parallel)
             {
+                double[] C = new double[nEl];
                 Parallel.For(0, nEl, i =>
                 {
                     double[] Ue = new double[24]
-{
-                   U[cMat[i, 0]], U[cMat[i, 1]], U[cMat[i, 2]],
-                   U[cMat[i, 3]], U[cMat[i, 4]], U[cMat[i, 5]],
-                   U[cMat[i, 6]], U[cMat[i, 7]], U[cMat[i, 8]],
-                   U[cMat[i, 9]], U[cMat[i, 10]], U[cMat[i, 11]],
-                   U[cMat[i, 12]], U[cMat[i, 13]], U[cMat[i, 14]],
-                   U[cMat[i, 15]], U[cMat[i, 16]], U[cMat[i, 17]],
-                   U[cMat[i, 18]], U[cMat[i, 19]], U[cMat[i, 20]],
-                   U[cMat[i, 21]], U[cMat[i, 22]], U[cMat[i, 23]]
-};
+                    {
+                        U[cMat[i, 0]], U[cMat[i, 1]], U[cMat[i, 2]],
+                        U[cMat[i, 3]], U[cMat[i, 4]], U[cMat[i, 5]],
+                        U[cMat[i, 6]], U[cMat[i, 7]], U[cMat[i, 8]],
+                        U[cMat[i, 9]], U[cMat[i, 10]], U[cMat[i, 11]],
+                        U[cMat[i, 12]], U[cMat[i, 13]], U[cMat[i, 14]],
+                        U[cMat[i, 15]], U[cMat[i, 16]], U[cMat[i, 17]],
+                        U[cMat[i, 18]], U[cMat[i, 19]], U[cMat[i, 20]],
+                        U[cMat[i, 21]], U[cMat[i, 22]], U[cMat[i, 23]]
+                    };
                     double v = Wrapper.TransposeMultiply(24, 24, Ke0, Ue);
 
                     var p1 = Xe[i] == 1 ? 1.0 : 1e-9;
                     var p2 = Xe[i] == 1 ? 1.0 : 1e-6;
-                    Compliance += 0.5 * p1 * v;
+                    C[i] = 0.5 * p1 * v;
                     dc[i] = 0.5 * p2 * v;
                 });
+                Compliance = C.Sum();
             }
             else
             {
@@ -374,14 +344,14 @@ namespace BESO
                 {
                     double[] Ue = new double[24]
                     {
-                   U[cMat[i, 0]], U[cMat[i, 1]], U[cMat[i, 2]],
-                   U[cMat[i, 3]], U[cMat[i, 4]], U[cMat[i, 5]],
-                   U[cMat[i, 6]], U[cMat[i, 7]], U[cMat[i, 8]],
-                   U[cMat[i, 9]], U[cMat[i, 10]], U[cMat[i, 11]],
-                   U[cMat[i, 12]], U[cMat[i, 13]], U[cMat[i, 14]],
-                   U[cMat[i, 15]], U[cMat[i, 16]], U[cMat[i, 17]],
-                   U[cMat[i, 18]], U[cMat[i, 19]], U[cMat[i, 20]],
-                   U[cMat[i, 21]], U[cMat[i, 22]], U[cMat[i, 23]]
+                        U[cMat[i, 0]], U[cMat[i, 1]], U[cMat[i, 2]],
+                        U[cMat[i, 3]], U[cMat[i, 4]], U[cMat[i, 5]],
+                        U[cMat[i, 6]], U[cMat[i, 7]], U[cMat[i, 8]],
+                        U[cMat[i, 9]], U[cMat[i, 10]], U[cMat[i, 11]],
+                        U[cMat[i, 12]], U[cMat[i, 13]], U[cMat[i, 14]],
+                        U[cMat[i, 15]], U[cMat[i, 16]], U[cMat[i, 17]],
+                        U[cMat[i, 18]], U[cMat[i, 19]], U[cMat[i, 20]],
+                        U[cMat[i, 21]], U[cMat[i, 22]], U[cMat[i, 23]]
                     };
                     double v = Wrapper.TransposeMultiply(24, 24, Ke0, Ue);
 
@@ -559,8 +529,8 @@ namespace BESO
             U = new double[num_allDofs];
 
             // Define force vector
-            //int forceID = (int)Math.Floor((nely + 1) * (nelx + 1) * 0.5) + 1;
-            int forceID = 18;
+            int forceID = (int)Math.Floor((nelz + 1) * 0.5) * (nelx + 1) * (nely + 1) + (int)Math.Floor((nelx + 1) * 0.5) + 1;
+            //int forceID = 18;
             F[forceID * 3 - 1] = -1.0;
 
             // Define fixed dofs

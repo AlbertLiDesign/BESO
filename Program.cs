@@ -16,7 +16,7 @@ namespace BESO
             sw.Start();
 
             BESO3D beso = new BESO3D(3.0, 0.5);
-            beso.Initialize(40, 20, 30, true);
+            beso.Initialize(40, 30, 20, false);
             Console.WriteLine(beso.ModelInfo());
 
             sw.Stop();
