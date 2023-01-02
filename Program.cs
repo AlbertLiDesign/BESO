@@ -13,11 +13,7 @@ namespace BESO
         {
             BESO3D beso = new BESO3D(3.0, 0.5);
             beso.Initialize(4, 2, 3);
-            //beso.Initialize(10, 12, 3);
-
             Console.WriteLine(beso.ModelInfo());
-            //beso.Optimize();
-            //Console.WriteLine(beso.info);
 
             while (!beso.convergence)
             {
@@ -35,8 +31,6 @@ namespace BESO
             beso.Initialize(8, 5);
 
             Console.WriteLine(beso.ModelInfo());
-            //beso.Optimize();
-            //Console.WriteLine(beso.info);
 
             while (!beso.convergence)
             {

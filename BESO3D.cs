@@ -270,7 +270,6 @@ namespace BESO
                     for (int i1 = 1; i1 <= nelx; i1++)
                     {
                         var e1 = (k1 - 1) * nelx * nely + (j1 - 1) * nelx + i1;
-                        //var e1 = (j1 - 1) * nelx * nelz + (i1 - 1) * nelz + k1; // Ran Huang's order
                         for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
                         {
                             for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
@@ -278,7 +277,6 @@ namespace BESO
                                 for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
                                 {
                                     var e2 = (k2 - 1) * nelx * nely + (j2 - 1) * nelx + i2;
-                                    //var e2 = (j2 - 1) * nelx * nelz + (i2 - 1) * nelz + k2; // Ran Huang's order
                                     ih[sum] = e1 - 1;
                                     jh[sum] = e2 - 1;
                                     vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
@@ -370,35 +368,6 @@ namespace BESO
                 3 * (nelx + 1) * (nely + 2) - 3, 3 * (nelx + 1) * (nely + 2) - 2, 3 * (nelx + 1) * (nely + 2) - 1,
             };
 
-            // Ran Huang's order
-            //for (int z = 0; z < nelz + 1; z++)
-            //    for (int y = 0; y < nely + 1; y++)
-            //        for (int x = 0; x < nelx + 1; x++)
-            //            nodeNrs[z, y, x] = y * (nelx + 1) * (nelz + 1) + x * (nelz + 1) + z;
-
-            //int[] cVec = new int[nEl];
-            //for (int z = 0; z < nelz; z++)
-            //    for (int y = 0; y < nely; y++)
-            //        for (int x = 0; x < nelx; x++)
-            //            cVec[y * nelx * nelz + x * nelz + z] = 3 * (nodeNrs[z, y, x] + 1) + 1;
-
-            //cMat = new int[nEl, 24];
-
-            //int[] edofs = new int[24]
-            //{
-            //    -3, -2, -1,
-            //    3 * (nelz + 1) - 3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) - 1,
-            //    3 * (nelz + 1) * (nelx + 2) - 3, 3 * (nelz + 1) * (nelx + 2) - 2, 3 * (nelz + 1) * (nelx + 2) - 1,
-            //    3 * (nelx + 1) * (nelz + 1) - 3, 3 * (nelx + 1) * (nelz + 1) - 2, 3 * (nelx + 1) * (nelz + 1) - 1,
-
-            //    0, 1, 2,
-            //    3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
-            //    3 * (nelz + 1) * (nelx + 2), 3 * (nelz + 1) * (nelx + 2) + 1, 3 * (nelz + 1) * (nelx + 2) + 2,
-            //    3 * (nelx + 1) * (nelz + 1), 3 * (nelx + 1) * (nelz + 1) + 1, 3 * (nelx + 1) * (nelz + 1) + 2,
-
-            //};
-
-
             for (int i = 0; i < nEl; i++)
                 for (int j = 0; j < 24; j++)
                     cMat[i, j] = cVec[i] + edofs[j] - 1;
@@ -479,18 +448,6 @@ namespace BESO
                     fixed_dofs[3 * (z * (nelx + 1) + x) + 2] = 3 * id + 2;
                 }
             }
-
-            // Ran Huang's order
-            //for (int i = 0; i < (nelx + 1) * (nelz + 1); i++)
-            //{
-            //    int id = (nelx + 1) * (nelz + 1) * nely + i;
-            //    fixed_dofs[3 * i] = 3 * id;
-            //    fixed_dofs[3 * i + 1] = 3 * id + 1;
-            //    fixed_dofs[3 * i + 2] = 3 * id + 2;
-            //}
-
-            //for (int i = 0; i < num_fixedDofs; i++)
-            //    fixed_dofs[i] = num_allDofs - 1 - i;
 
             var all_dofs = new int[num_allDofs];
             for (int i = 0; i < num_allDofs; i++)
