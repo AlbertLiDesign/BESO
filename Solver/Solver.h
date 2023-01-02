@@ -6,11 +6,9 @@
 
 #define EIGEN_USE_MKL_ALL
 #include <Eigen/Eigen>
-#include <Eigen/Dense>
 #include <Eigen/PardisoSupport>
 #include <Eigen/CholmodSupport>
 
-#include<unsupported/Eigen/CXX11/Tensor>
 #include <unsupported/Eigen/SparseExtra>
 #include<unsupported/Eigen/src/SparseExtra/MarketIO.h>
 #include <unsupported/Eigen/KroneckerProduct>

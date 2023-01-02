@@ -1,6 +1,5 @@
 #include "Solver.h"
 
-
 using namespace Eigen;
 using namespace std;
 
@@ -126,7 +125,7 @@ void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* fr
     SparseMatrix<double> K_freedof = P * K * P.transpose();
     //auto DK = MatrixXd(K_freedof);
     //std::cout << DK << std::endl;
-    //Eigen::saveMarket(K, "mat.mtx");
+    Eigen::saveMarket(K_freedof, "mat.mtx");
     //saveMarket(K_freedof, "C:/Development/K_freedof_cpp.mtx");
 
     VectorXd F_freedof(num_freeDofs);
