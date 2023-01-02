@@ -265,59 +265,20 @@ namespace BESO
             int sum = 0;
             for (int k1 = 1; k1 <= nelz; k1++)
             {
-                for (int i1 = 1; i1 <= nelx; i1++)
+                for (int j1 = 1; j1 <= nely; j1++)
                 {
-                    for (int j1 = 1; j1 <= nely; j1++)
+                    for (int i1 = 1; i1 <= nelx; i1++)
                     {
-                        //var e1 = (k1 - 1) * nelx * nely + (i1 - 1) * nely + j1;
-                        //var e1 = (i1 - 1) * nely * nelz + (j1 - 1) * nelz + k1;
-                        var e1 = (j1 - 1) * nelx * nelz + (i1 - 1) * nelz + k1;
+                        var e1 = (k1 - 1) * nelx * nely + (j1 - 1) * nelx + i1;
+                        //var e1 = (j1 - 1) * nelx * nelz + (i1 - 1) * nelz + k1; // Ran Huang's order
                         for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
                         {
-                            for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
+                            for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
                             {
-                                for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
+                                for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
                                 {
-                                    //var e2 = (k2 - 1) * nelx * nely + (i2 - 1) * nely + j2;
-                                    //var e2 = (i2 - 1) * nely * nelz + (j2 - 1) * nelz + k2;
-                                    var e2 = (j2 - 1) * nelx * nelz + (i2 - 1) * nelz + k2;
-                                    ih[sum] = e1 - 1;
-                                    jh[sum] = e2 - 1;
-                                    vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
-                                    sum++;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Wrapper.GetRowSum(sum, nEl, ih, jh, vh, sh);
-        }
-        private void PreFlt2()
-        {
-            int rminf = (int)Math.Floor(rmin);
-
-            ih = new int[(int)(nEl * Math.Pow((3 * rminf - 1), 3))];
-            jh = new int[ih.Length];
-            vh = new double[ih.Length];
-            sh = new double[nEl];
-
-            int sum = 0;
-            for (int k1 = 1; k1 <= nelz; k1++)
-            {
-                for (int i1 = 1; i1 <= nelx; i1++)
-                {
-                    for (int j1 = 1; j1 <= nely; j1++)
-                    {
-                        var e1 = (k1 - 1) * nelx * nely + (i1 - 1) * nely + j1;
-                        for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
-                        {
-                            for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
-                            {
-                                for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
-                                {
-                                    var e2 = (k2 - 1) * nelx * nely + (i2 - 1) * nely + j2;
+                                    var e2 = (k2 - 1) * nelx * nely + (j2 - 1) * nelx + i2;
+                                    //var e2 = (j2 - 1) * nelx * nelz + (i2 - 1) * nelz + k2; // Ran Huang's order
                                     ih[sum] = e1 - 1;
                                     jh[sum] = e2 - 1;
                                     vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
@@ -353,7 +314,6 @@ namespace BESO
         private void GetDc()
         {
             Compliance = 0.0;
-            // My order
             for (int i = 0; i < nEl; i++)
             {
                 double[] Ue = new double[24]
@@ -374,126 +334,9 @@ namespace BESO
                 Compliance += 0.5 * p1 * v;
                 dc[i] = 0.5 * p2 * v;
             }
-
-
-            // Ran Huang's order
-            //    for (int z = 0; z < nelz; z++)
-            //        for (int y = 0; y < nely; y++)
-            //            for (int x = 0; x < nelx; x++)
-            //            {
-            //                int i = y * nelx * nelz + x * nelz + z;
-            //                double[] Ue = new double[24]
-            //                {
-            //                    U[cMat[i, 0]], U[cMat[i, 1]], U[cMat[i, 2]],
-            //                    U[cMat[i, 3]], U[cMat[i, 4]], U[cMat[i, 5]],
-            //                    U[cMat[i, 6]], U[cMat[i, 7]], U[cMat[i, 8]],
-            //                    U[cMat[i, 9]], U[cMat[i, 10]], U[cMat[i, 11]],
-            //                    U[cMat[i, 12]], U[cMat[i, 13]], U[cMat[i, 14]],
-            //                    U[cMat[i, 15]], U[cMat[i, 16]], U[cMat[i, 17]],
-            //                    U[cMat[i, 18]], U[cMat[i, 19]], U[cMat[i, 20]],
-            //                    U[cMat[i, 21]], U[cMat[i, 22]], U[cMat[i, 23]]
-            //                };
-            //                double v = Wrapper.TransposeMultiply(24, 24, Ke0, Ue);
-
-            //                var p1 = Xe[i] == 1 ? 1.0 : 1e-9;
-            //                var p2 = Xe[i] == 1 ? 1.0 : 1e-6;
-            //                Compliance += 0.5 * p1 * v;
-            //                dc[i] = 0.5 * p2 * v;
-            //            }
-        }
-        private void GetDc2()
-        {
-            Compliance = 0.0;
-            for (int z = 0; z < nelz; z++)
-            {
-                for (int y = 0; y < nely; y++)
-                {
-                    for (int x = 0; x < nelx; x++)
-                    {
-                        var n1 = (nelx + 1) * (nelz + 1) * y + x * (nelz + 1) + z + 1;
-                        var n2 = (nelx + 1) * (nelz + 1) * y + (x + 1) * (nelz + 1) + z + 1;
-                        var n3 = (nelx + 1) * (nelz + 1) * (y + 1) + (x + 1) * (nelz + 1) + z + 1;
-                        var n4 = (nelx + 1) * (nelz + 1) * (y + 1) + x * (nelz + 1) + z + 1;
-
-                        double[] Ue =
-                        {
-                            U[3 * n1 - 3], U[3 * n1 - 2], U[3 * n1 - 1],
-                            U[3 * n2 - 3], U[3 * n2 - 2], U[3 * n2 - 1],
-                            U[3 * n3 - 3], U[3 * n3 - 2], U[3 * n3 - 1],
-                            U[3 * n4 - 3], U[3 * n4 - 2], U[3 * n4 - 1],
-                            U[3 * n1], U[3 * n1 + 1], U[3 * n1 + 2],
-                            U[3 * n2], U[3 * n2 + 1], U[3 * n2 + 2],
-                            U[3 * n3], U[3 * n3 + 1], U[3 * n3 + 2],
-                            U[3 * n4], U[3 * n4 + 1], U[3 * n4 + 2]
-                        };
-
-                        double v = Wrapper.TransposeMultiply(24, 24, Ke0, Ue);
-
-                        int id = x * nely * nelz + y * nelz + z;
-                        var p1 = Xe[id] == 1 ? 1.0 : 1e-9;
-                        var p2 = Xe[id] == 1 ? 1.0 : 1e-6;
-                        Compliance += 0.5 * p1 * v;
-                        dc[id] = 0.5 * p2 * v;
-                    }
-                }
-            }
         }
 
         #region Finite element analysis
-        private void PreFE3D2(int nelx, int nely, int nelz)
-        {
-            var nodegrd = new int[nelx + 1, nely + 1];
-            for (int i = 0; i < nelx + 1; i++)
-                for (int j = 0; j < nely + 1; j++)
-                    nodegrd[i, j] = i * (nely + 1) + j;
-
-            var nodeids = new int[nelx * nely];
-            for (int i = 0; i < nelx; i++)
-                for (int j = 0; j < nely; j++)
-                    nodeids[i * nely + j] = nodegrd[i, j];
-
-            var nodeidz = new int[nelz];
-            for (int i = 0; i < nelz; i++)
-                nodeidz[i] = i * (nelx + 1) * (nely + 1);
-
-            var edofVec = new int[nEl];
-            for (int i = 0; i < nelx * nely; i++)
-            {
-                for (int j = 0; j < nelz; j++)
-                {
-                    edofVec[j * nelx * nely + i] = (nodeids[i] + 1 + nodeidz[j]) * 3;
-                }
-            }
-
-            int a = 3 * nely;
-            int b = 3 * (nely + 1) * (nelx + 1);
-            int[] edofs = new int[24]
-            {
-                0, 1, 2,
-                a + 3, a + 4, a + 5,
-                a, a + 1, a + 2,
-                -3, -2, -1,
-
-                b, b + 1,b + 2,
-                b + a + 3, b + a + 4, b + a + 5,
-                b + a, b + a + 1, b + a + 2,
-                b - 3, b - 2, b - 1
-            };
-
-            edofMat = new int[nEl * 24];
-            for (int i = 0; i < 24; i++)
-            {
-                for (int j = 0; j < nEl; j++)
-                {
-                    edofMat[i * nEl + j] = edofVec[j] + edofs[i];
-                }
-            }
-
-            ik = new int[24 * 24 * nEl];
-            jk = new int[24 * 24 * nEl];
-
-            Wrapper.Cal_ik_jk(nEl, edofMat, ik, jk);
-        }
         private void PreFE3D(int nelx, int nely, int nelz)
         {
             int[,,] nodeNrs = new int[nelz + 1, nely + 1, nelx + 1];
@@ -501,60 +344,59 @@ namespace BESO
             int nEl = nelx * nely * nelz;
 
             // My order
-            //for (int z = 0; z < nelz + 1; z++)
-            //    for (int y = 0; y < nely + 1; y++)
-            //        for (int x = 0; x < nelx + 1; x++)
-            //            nodeNrs[z, y, x] = z * (nelx + 1) * (nely + 1) + y * (nelx + 1) + x;
-
-            //int[] cVec = new int[nEl];
-            //for (int z = 0; z < nelz; z++)
-            //    for (int y = 0; y < nely; y++)
-            //        for (int x = 0; x < nelx; x++)
-            //            cVec[z * nelx * nely + y * nelx + x] = 3 * (nodeNrs[z, y, x] + 1) + 1;
-
-            //cMat = new int[nEl, 24];
-
-            // My order
-            //int[] edofs = new int[24]
-            //{
-            //    -3, -2, -1,
-            //    0, 1, 2,
-            //    3 * (nelx + 1), 3 * (nelx + 1) + 1, 3 * (nelx + 1) + 2,
-            //    3 * (nelx + 1) - 3, 3 * (nelx + 1) - 2, 3 * (nelx + 1) - 1,
-
-            //    3 * (nelx + 1) * (nely + 1) - 3, 3 * (nelx + 1) * (nely + 1) - 2, 3 * (nelx + 1) * (nely + 1) - 1,
-            //    3 * (nelx + 1) * (nely + 1), 3 * (nelx + 1) * (nely + 1) + 1, 3 * (nelx + 1) * (nely + 1) + 2,
-            //    3 * (nelx + 1) * (nely + 2), 3 * (nelx + 1) * (nely + 2) + 1, 3 * (nelx + 1) * (nely + 2) + 2,
-            //    3 * (nelx + 1) * (nely + 2) - 3, 3 * (nelx + 1) * (nely + 2) - 2, 3 * (nelx + 1) * (nely + 2) - 1,
-            //};
-
-            // Ran Huang's order
             for (int z = 0; z < nelz + 1; z++)
                 for (int y = 0; y < nely + 1; y++)
                     for (int x = 0; x < nelx + 1; x++)
-                        nodeNrs[z, y, x] = y * (nelx + 1) * (nelz + 1) + x * (nelz + 1) + z;
+                        nodeNrs[z, y, x] = z * (nelx + 1) * (nely + 1) + y * (nelx + 1) + x;
 
             int[] cVec = new int[nEl];
             for (int z = 0; z < nelz; z++)
                 for (int y = 0; y < nely; y++)
                     for (int x = 0; x < nelx; x++)
-                        cVec[y * nelx * nelz + x * nelz + z] = 3 * (nodeNrs[z, y, x] + 1) + 1;
+                        cVec[z * nelx * nely + y * nelx + x] = 3 * (nodeNrs[z, y, x] + 1) + 1;
 
             cMat = new int[nEl, 24];
 
             int[] edofs = new int[24]
             {
                 -3, -2, -1,
-                3 * (nelz + 1) - 3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) - 1,
-                3 * (nelz + 1) * (nelx + 2) - 3, 3 * (nelz + 1) * (nelx + 2) - 2, 3 * (nelz + 1) * (nelx + 2) - 1,
-                3 * (nelx + 1) * (nelz + 1) - 3, 3 * (nelx + 1) * (nelz + 1) - 2, 3 * (nelx + 1) * (nelz + 1) - 1,
-
                 0, 1, 2,
-                3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
-                3 * (nelz + 1) * (nelx + 2), 3 * (nelz + 1) * (nelx + 2) + 1, 3 * (nelz + 1) * (nelx + 2) + 2,
-                3 * (nelx + 1) * (nelz + 1), 3 * (nelx + 1) * (nelz + 1) + 1, 3 * (nelx + 1) * (nelz + 1) + 2,
+                3 * (nelx + 1), 3 * (nelx + 1) + 1, 3 * (nelx + 1) + 2,
+                3 * (nelx + 1) - 3, 3 * (nelx + 1) - 2, 3 * (nelx + 1) - 1,
 
+                3 * (nelx + 1) * (nely + 1) - 3, 3 * (nelx + 1) * (nely + 1) - 2, 3 * (nelx + 1) * (nely + 1) - 1,
+                3 * (nelx + 1) * (nely + 1), 3 * (nelx + 1) * (nely + 1) + 1, 3 * (nelx + 1) * (nely + 1) + 2,
+                3 * (nelx + 1) * (nely + 2), 3 * (nelx + 1) * (nely + 2) + 1, 3 * (nelx + 1) * (nely + 2) + 2,
+                3 * (nelx + 1) * (nely + 2) - 3, 3 * (nelx + 1) * (nely + 2) - 2, 3 * (nelx + 1) * (nely + 2) - 1,
             };
+
+            // Ran Huang's order
+            //for (int z = 0; z < nelz + 1; z++)
+            //    for (int y = 0; y < nely + 1; y++)
+            //        for (int x = 0; x < nelx + 1; x++)
+            //            nodeNrs[z, y, x] = y * (nelx + 1) * (nelz + 1) + x * (nelz + 1) + z;
+
+            //int[] cVec = new int[nEl];
+            //for (int z = 0; z < nelz; z++)
+            //    for (int y = 0; y < nely; y++)
+            //        for (int x = 0; x < nelx; x++)
+            //            cVec[y * nelx * nelz + x * nelz + z] = 3 * (nodeNrs[z, y, x] + 1) + 1;
+
+            //cMat = new int[nEl, 24];
+
+            //int[] edofs = new int[24]
+            //{
+            //    -3, -2, -1,
+            //    3 * (nelz + 1) - 3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) - 1,
+            //    3 * (nelz + 1) * (nelx + 2) - 3, 3 * (nelz + 1) * (nelx + 2) - 2, 3 * (nelz + 1) * (nelx + 2) - 1,
+            //    3 * (nelx + 1) * (nelz + 1) - 3, 3 * (nelx + 1) * (nelz + 1) - 2, 3 * (nelx + 1) * (nelz + 1) - 1,
+
+            //    0, 1, 2,
+            //    3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
+            //    3 * (nelz + 1) * (nelx + 2), 3 * (nelz + 1) * (nelx + 2) + 1, 3 * (nelz + 1) * (nelx + 2) + 2,
+            //    3 * (nelx + 1) * (nelz + 1), 3 * (nelx + 1) * (nelz + 1) + 1, 3 * (nelx + 1) * (nelz + 1) + 2,
+
+            //};
 
 
             for (int i = 0; i < nEl; i++)
@@ -618,7 +460,7 @@ namespace BESO
 
             // Define force vector
             //int forceID = (int)Math.Floor((nely + 1) * (nelx + 1) * 0.5) + 1;
-            int forceID = 10;
+            int forceID = 18;
             F[forceID * 3 - 1] = -1.0;
 
             // Define fixed dofs
@@ -627,25 +469,25 @@ namespace BESO
             var fixed_dofs = new int[num_fixedDofs];
 
             // my order
-            //for (int z = 0; z < nelz + 1; z++)
-            //{
-            //    for (int x = 0; x < nelx + 1; x++)
-            //    {
-            //        int id = nely * (nelx + 1) + z * (nelx + 1) * (nely + 1) + x;
-            //        fixed_dofs[3 * (z * (nelx + 1) + x)] = 3 * id;
-            //        fixed_dofs[3 * (z * (nelx + 1) + x) + 1] = 3 * id + 1;
-            //        fixed_dofs[3 * (z * (nelx + 1) + x) + 2] = 3 * id + 2;
-            //    }
-            //}
+            for (int z = 0; z < nelz + 1; z++)
+            {
+                for (int x = 0; x < nelx + 1; x++)
+                {
+                    int id = nely * (nelx + 1) + z * (nelx + 1) * (nely + 1) + x;
+                    fixed_dofs[3 * (z * (nelx + 1) + x)] = 3 * id;
+                    fixed_dofs[3 * (z * (nelx + 1) + x) + 1] = 3 * id + 1;
+                    fixed_dofs[3 * (z * (nelx + 1) + x) + 2] = 3 * id + 2;
+                }
+            }
 
             // Ran Huang's order
-            for (int i = 0; i < (nelx + 1) * (nelz + 1); i++)
-            {
-                int id = (nelx + 1) * (nelz + 1) * nely + i;
-                fixed_dofs[3 * i] = 3 * id;
-                fixed_dofs[3 * i + 1] = 3 * id + 1;
-                fixed_dofs[3 * i + 2] = 3 * id + 2;
-            }
+            //for (int i = 0; i < (nelx + 1) * (nelz + 1); i++)
+            //{
+            //    int id = (nelx + 1) * (nelz + 1) * nely + i;
+            //    fixed_dofs[3 * i] = 3 * id;
+            //    fixed_dofs[3 * i + 1] = 3 * id + 1;
+            //    fixed_dofs[3 * i + 2] = 3 * id + 2;
+            //}
 
             //for (int i = 0; i < num_fixedDofs; i++)
             //    fixed_dofs[i] = num_allDofs - 1 - i;
