@@ -1,5 +1,5 @@
-# 2DBESO
-**2DBESO** is an efficient implementation for Bi-directional Evolutionary Structural Optimization (BESO) method using C# and C++.
+# BESO
+**BESO** is an efficient implementation for Bi-directional Evolutionary Structural Optimization (BESO) method using C# and C++. The 2D and 3D programs are calibrated with [1] and [4], respectively.
 
 
 ## Dependencies
@@ -15,7 +15,7 @@ Noted that all math operations are run on C++.
 ## Usage
 
 ```C#
-BESO beso = new BESO(3.0, 0.5); // filter radius = 3, target volume = 50%
+BESO2D beso = new BESO2D(3.0, 0.5); // filter radius = 3, target volume = 50%
 beso.Initialize(80, 50); // resolution 80 x 50
 
 Console.WriteLine(beso.ModelInfo());
@@ -96,6 +96,8 @@ Iter: 44, Volume: 0.5, Compliance: 18.70753045609539, Change: 0.0002524614820453
 
 ## References
 
-1. [CISM_BESO_2D](https://www.cism.org.au/tools)
-2. Zuo, Z.H. and Xie, Y.M., 2015. A simple and compact Python code for complex 3D topology optimization. Advances in Engineering Software, 85, pp.1-11.
-5. Huang, X. and Xie, M., 2010. Evolutionary topology optimization of continuum structures: methods and applications. John Wiley & Sons.
+[1] [CISM_BESO_2D](https://www.cism.org.au/tools)
+[2] Zuo, Z.H. and Xie, Y.M., 2015. A simple and compact Python code for complex 3D topology optimization. Advances in Engineering Software, 85, pp.1-11.
+[3] Huang, X. and Xie, M., 2010. Evolutionary topology optimization of continuum structures: methods and applications. John Wiley & Sons.
+[4] Huang, R. and Huang, X., 2011. Matlab implementation of 3D topology optimization using BESO. Incorporating Sustainable Practice in Mechanics of Structures and Materials, pp.813-818.
+[5] Ferrari, F. and Sigmund, O., 2020. A new generation 99 line Matlab code for compliance topology optimization and its extension to 3D. Structural and Multidisciplinary Optimization, 62(4), pp.2211-2228.
