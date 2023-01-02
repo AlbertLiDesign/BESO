@@ -11,6 +11,7 @@ namespace BESO
 {
     public class BESO2D
     {
+        public bool parallel = true;
         #region Resolution
         public int nelx;
         public int nely;
@@ -385,7 +386,7 @@ namespace BESO
             }
 
             var U_freedof = new double[num_freeDofs];
-            Wrapper.Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, vk, F, U_freedof);
+            Wrapper.Assembly_Solve(parallel, num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, vk, F, U_freedof);
 
             for (int i = 0; i < num_freeDofs; i++)
             {

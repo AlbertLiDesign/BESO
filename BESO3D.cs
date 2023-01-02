@@ -13,6 +13,7 @@ namespace BESO
 {
     public class BESO3D
     {
+        public bool parallel = true;
         #region Resolution
         public int nelx;
         public int nely;
@@ -58,7 +59,6 @@ namespace BESO
         public double[] dc;
         public double[] dc_old;
 
-        private int[] edofMat;
         private int[,] cMat;
         /// <summary>
         /// Elemental stiffness matrix
@@ -141,8 +141,10 @@ namespace BESO
         }
         #endregion
 
-        public void Initialize(int nelx, int nely, int nelz)
+        public void Initialize(int nelx, int nely, int nelz, bool parallel=false)
         {
+            this.parallel = parallel;
+
             nEl = nelx * nely * nelz;
             initInfo = new StringBuilder("====================== Launch BESO ======================" + '\n');
 
@@ -263,24 +265,55 @@ namespace BESO
             sh = new double[nEl];
 
             int sum = 0;
-            for (int k1 = 1; k1 <= nelz; k1++)
+            if (parallel)
             {
-                for (int j1 = 1; j1 <= nely; j1++)
+                Parallel.For(1, nelx + 1, i1 =>
                 {
-                    for (int i1 = 1; i1 <= nelx; i1++)
+                    for (int k1 = 1; k1 <= nelz; k1++)
                     {
-                        var e1 = (k1 - 1) * nelx * nely + (j1 - 1) * nelx + i1;
-                        for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
+                        for (int j1 = 1; j1 <= nely; j1++)
                         {
-                            for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
+                            var e1 = (k1 - 1) * nelx * nely + (j1 - 1) * nelx + i1;
+                            for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
                             {
-                                for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
+                                for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
                                 {
-                                    var e2 = (k2 - 1) * nelx * nely + (j2 - 1) * nelx + i2;
-                                    ih[sum] = e1 - 1;
-                                    jh[sum] = e2 - 1;
-                                    vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
-                                    sum++;
+                                    for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
+                                    {
+                                        var e2 = (k2 - 1) * nelx * nely + (j2 - 1) * nelx + i2;
+                                        ih[sum] = e1 - 1;
+                                        jh[sum] = e2 - 1;
+                                        vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
+                                        sum++;
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                });
+            }
+            else
+            {
+                for (int k1 = 1; k1 <= nelz; k1++)
+                {
+                    for (int j1 = 1; j1 <= nely; j1++)
+                    {
+                        for (int i1 = 1; i1 <= nelx; i1++)
+                        {
+                            var e1 = (k1 - 1) * nelx * nely + (j1 - 1) * nelx + i1;
+                            for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
+                            {
+                                for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
+                                {
+                                    for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
+                                    {
+                                        var e2 = (k2 - 1) * nelx * nely + (j2 - 1) * nelx + i2;
+                                        ih[sum] = e1 - 1;
+                                        jh[sum] = e2 - 1;
+                                        vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
+                                        sum++;
+                                    }
                                 }
                             }
                         }
@@ -312,10 +345,12 @@ namespace BESO
         private void GetDc()
         {
             Compliance = 0.0;
-            for (int i = 0; i < nEl; i++)
+            if (parallel)
             {
-                double[] Ue = new double[24]
+                Parallel.For(0, nEl, i =>
                 {
+                    double[] Ue = new double[24]
+{
                    U[cMat[i, 0]], U[cMat[i, 1]], U[cMat[i, 2]],
                    U[cMat[i, 3]], U[cMat[i, 4]], U[cMat[i, 5]],
                    U[cMat[i, 6]], U[cMat[i, 7]], U[cMat[i, 8]],
@@ -324,13 +359,37 @@ namespace BESO
                    U[cMat[i, 15]], U[cMat[i, 16]], U[cMat[i, 17]],
                    U[cMat[i, 18]], U[cMat[i, 19]], U[cMat[i, 20]],
                    U[cMat[i, 21]], U[cMat[i, 22]], U[cMat[i, 23]]
-                };
-                double v = Wrapper.TransposeMultiply(24, 24, Ke0, Ue);
+};
+                    double v = Wrapper.TransposeMultiply(24, 24, Ke0, Ue);
 
-                var p1 = Xe[i] == 1 ? 1.0 : 1e-9;
-                var p2 = Xe[i] == 1 ? 1.0 : 1e-6;
-                Compliance += 0.5 * p1 * v;
-                dc[i] = 0.5 * p2 * v;
+                    var p1 = Xe[i] == 1 ? 1.0 : 1e-9;
+                    var p2 = Xe[i] == 1 ? 1.0 : 1e-6;
+                    Compliance += 0.5 * p1 * v;
+                    dc[i] = 0.5 * p2 * v;
+                });
+            }
+            else
+            {
+                for (int i = 0; i < nEl; i++)
+                {
+                    double[] Ue = new double[24]
+                    {
+                   U[cMat[i, 0]], U[cMat[i, 1]], U[cMat[i, 2]],
+                   U[cMat[i, 3]], U[cMat[i, 4]], U[cMat[i, 5]],
+                   U[cMat[i, 6]], U[cMat[i, 7]], U[cMat[i, 8]],
+                   U[cMat[i, 9]], U[cMat[i, 10]], U[cMat[i, 11]],
+                   U[cMat[i, 12]], U[cMat[i, 13]], U[cMat[i, 14]],
+                   U[cMat[i, 15]], U[cMat[i, 16]], U[cMat[i, 17]],
+                   U[cMat[i, 18]], U[cMat[i, 19]], U[cMat[i, 20]],
+                   U[cMat[i, 21]], U[cMat[i, 22]], U[cMat[i, 23]]
+                    };
+                    double v = Wrapper.TransposeMultiply(24, 24, Ke0, Ue);
+
+                    var p1 = Xe[i] == 1 ? 1.0 : 1e-9;
+                    var p2 = Xe[i] == 1 ? 1.0 : 1e-6;
+                    Compliance += 0.5 * p1 * v;
+                    dc[i] = 0.5 * p2 * v;
+                }
             }
         }
 
@@ -338,73 +397,131 @@ namespace BESO
         private void PreFE3D(int nelx, int nely, int nelz)
         {
             int[,,] nodeNrs = new int[nelz + 1, nely + 1, nelx + 1];
-
             int nEl = nelx * nely * nelz;
-
-            // My order
-            for (int z = 0; z < nelz + 1; z++)
-                for (int y = 0; y < nely + 1; y++)
-                    for (int x = 0; x < nelx + 1; x++)
-                        nodeNrs[z, y, x] = z * (nelx + 1) * (nely + 1) + y * (nelx + 1) + x;
-
             int[] cVec = new int[nEl];
-            for (int z = 0; z < nelz; z++)
-                for (int y = 0; y < nely; y++)
-                    for (int x = 0; x < nelx; x++)
-                        cVec[z * nelx * nely + y * nelx + x] = 3 * (nodeNrs[z, y, x] + 1) + 1;
-
             cMat = new int[nEl, 24];
-
             int[] edofs = new int[24]
             {
                 -3, -2, -1,
                 0, 1, 2,
                 3 * (nelx + 1), 3 * (nelx + 1) + 1, 3 * (nelx + 1) + 2,
                 3 * (nelx + 1) - 3, 3 * (nelx + 1) - 2, 3 * (nelx + 1) - 1,
-
+            
                 3 * (nelx + 1) * (nely + 1) - 3, 3 * (nelx + 1) * (nely + 1) - 2, 3 * (nelx + 1) * (nely + 1) - 1,
                 3 * (nelx + 1) * (nely + 1), 3 * (nelx + 1) * (nely + 1) + 1, 3 * (nelx + 1) * (nely + 1) + 2,
                 3 * (nelx + 1) * (nely + 2), 3 * (nelx + 1) * (nely + 2) + 1, 3 * (nelx + 1) * (nely + 2) + 2,
                 3 * (nelx + 1) * (nely + 2) - 3, 3 * (nelx + 1) * (nely + 2) - 2, 3 * (nelx + 1) * (nely + 2) - 1,
             };
 
-            for (int i = 0; i < nEl; i++)
-                for (int j = 0; j < 24; j++)
-                    cMat[i, j] = cVec[i] + edofs[j] - 1;
-
-            var sI = new int[300];
-            var sII = new int[300];
-            int num = 0;
-            int num2 = 0;
-            for (int i = 0; i < 24; i++)
+            if (parallel)
             {
-                for (int j = i; j < 24; j++)
+                Parallel.For(0, nelx, x =>
                 {
-                    sI[num] = j;
-                    sII[num] = num2;
-                    num++;
-                }
-                num2++;
-            }
-
-            ik = new int[300 * nEl];
-            jk = new int[300 * nEl];
-
-            for (int j = 0; j < nEl; j++)
-            {
-                for (int i = 0; i < 300; i++)
+                    for (int z = 0; z < nelz + 1; z++)
+                        for (int y = 0; y < nely + 1; y++)
+                            nodeNrs[z, y, x] = z * (nelx + 1) * (nely + 1) + y * (nelx + 1) + x;
+                });
+                Parallel.For(0, nelx, x =>
                 {
-                    var a = cMat[j, sI[i]];
-                    var b = cMat[j, sII[i]];
-                    if (a >= b)
+                    for (int z = 0; z < nelz; z++)
+                        for (int y = 0; y < nely; y++)
+                            cVec[z * nelx * nely + y * nelx + x] = 3 * (nodeNrs[z, y, x] + 1) + 1;
+                });
+
+                Parallel.For(0, nEl, i =>
+                {
+                    for (int j = 0; j < 24; j++)
+                        cMat[i, j] = cVec[i] + edofs[j] - 1;
+                });
+
+                var sI = new int[300];
+                var sII = new int[300];
+                int num = 0;
+                int num2 = 0;
+                for (int i = 0; i < 24; i++)
+                {
+                    for (int j = i; j < 24; j++)
                     {
-                        ik[j * 300 + i] = a;
-                        jk[j * 300 + i] = b;
+                        sI[num] = j;
+                        sII[num] = num2;
+                        num++;
                     }
-                    else
+                    num2++;
+                }
+
+                ik = new int[300 * nEl];
+                jk = new int[300 * nEl];
+
+                Parallel.For(0, nEl, i =>
+                {
+                    for (int j = 0; j < 300; j++)
                     {
-                        ik[j * 300 + i] = b;
-                        jk[j * 300 + i] = a;
+                        var a = cMat[i, sI[j]];
+                        var b = cMat[i, sII[j]];
+                        if (a >= b)
+                        {
+                            ik[i * 300 + j] = a;
+                            jk[i * 300 + j] = b;
+                        }
+                        else
+                        {
+                            ik[i * 300 + j] = b;
+                            jk[i * 300 + j] = a;
+                        }
+                    }
+
+                });
+            }
+            else
+            {
+                for (int z = 0; z < nelz + 1; z++)
+                    for (int y = 0; y < nely + 1; y++)
+                        for (int x = 0; x < nelx + 1; x++)
+                            nodeNrs[z, y, x] = z * (nelx + 1) * (nely + 1) + y * (nelx + 1) + x;
+
+                for (int z = 0; z < nelz; z++)
+                    for (int y = 0; y < nely; y++)
+                        for (int x = 0; x < nelx; x++)
+                            cVec[z * nelx * nely + y * nelx + x] = 3 * (nodeNrs[z, y, x] + 1) + 1;
+
+                for (int i = 0; i < nEl; i++)
+                    for (int j = 0; j < 24; j++)
+                        cMat[i, j] = cVec[i] + edofs[j] - 1;
+
+                var sI = new int[300];
+                var sII = new int[300];
+                int num = 0;
+                int num2 = 0;
+                for (int i = 0; i < 24; i++)
+                {
+                    for (int j = i; j < 24; j++)
+                    {
+                        sI[num] = j;
+                        sII[num] = num2;
+                        num++;
+                    }
+                    num2++;
+                }
+
+                ik = new int[300 * nEl];
+                jk = new int[300 * nEl];
+
+                for (int j = 0; j < nEl; j++)
+                {
+                    for (int i = 0; i < 300; i++)
+                    {
+                        var a = cMat[j, sI[i]];
+                        var b = cMat[j, sII[i]];
+                        if (a >= b)
+                        {
+                            ik[j * 300 + i] = a;
+                            jk[j * 300 + i] = b;
+                        }
+                        else
+                        {
+                            ik[j * 300 + i] = b;
+                            jk[j * 300 + i] = a;
+                        }
                     }
                 }
             }
@@ -414,12 +531,26 @@ namespace BESO
             // Assemble stiffness matrix with all DOFs
             sk = new double[300 * nEl];
 
-            for (int i = 0; i < nEl; i++)
+            if (parallel)
             {
-                var ex = Xe[i] == 1 ? 1.0 : 1e-9;
-                for (int j = 0; j < 300; j++)
+                Parallel.For(0, nEl, i =>
                 {
-                    sk[300 * i + j] = ex * Ke[j];
+                    var ex = Xe[i] == 1 ? 1.0 : 1e-9;
+                    for (int j = 0; j < 300; j++)
+                    {
+                        sk[300 * i + j] = ex * Ke[j];
+                    }
+                });
+            }
+            else
+            {
+                for (int i = 0; i < nEl; i++)
+                {
+                    var ex = Xe[i] == 1 ? 1.0 : 1e-9;
+                    for (int j = 0; j < 300; j++)
+                    {
+                        sk[300 * i + j] = ex * Ke[j];
+                    }
                 }
             }
 
@@ -458,73 +589,7 @@ namespace BESO
 
             var U_freedof = new double[num_freeDofs];
 
-            Wrapper.Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
-
-            for (int i = 0; i < num_freeDofs; i++)
-            {
-                U[free_dofs[i]] = U_freedof[i];
-            }
-        }
-        private void FE2()
-        {
-            // Assemble stiffness matrix with all DOFs
-            sk = new double[24 * 24 * nEl];
-            for (int z = 0; z < nelz; z++)
-            {
-                for (int y = 0; y < nely; y++)
-                {
-                    for (int x = 0; x < nelx; x++)
-                    {
-                        var id = x * nely * nelz + y * nelz + z;
-                        var ex = Xe[id] == 1 ? 1.0 : 1e-9;
-                        for (int a = 0; a < 24; a++)
-                            for (int b = 0; b < 24; b++)
-                                sk[24 * (24 * id + a) + b] = ex * Ke0[b * 24 + a];
-                    }
-                }
-            }
-
-            int num_allDofs = 3 * (nelx + 1) * (nely + 1) * (nelz + 1);
-            int num_fixedDofs = 3 * (nely + 1) * (nelz + 1);
-            int num_freeDofs = num_allDofs - num_fixedDofs;
-
-            var F = new double[num_allDofs];
-            U = new double[num_allDofs];
-
-            // Define force vector
-            //int forceID = (int)Math.Floor((nely + 1) * (nelx + 1) * 0.5) + 1;
-            for (int z = 0; z < nelz + 1; z++)
-            {
-                var loadnid = z * (nelx + 1) * (nely + 1) + nelx * (nely + 1) + (nely + 1 - 0);
-                F[loadnid * 3 - 1 - 1] = -1.0;
-            }
-
-            // Define fixed dofs
-            var fixed_dofs = new int[num_fixedDofs];
-            //for (int i = 0; i < num_fixedDofs; i++)
-            //    fixed_dofs[i] = num_allDofs - 1 - i;
-            int sum = 0;
-            for (int z = 0; z < nelz + 1; z++)
-            {
-                for (int y = 0; y < nely + 1; y++)
-                {
-                    fixed_dofs[sum * 3] = 3 * (z * (nelx + 1) * (nely + 1) + (nely + 1 - y)) - 1;
-                    fixed_dofs[sum * 3 + 1] = 3 * (z * (nelx + 1) * (nely + 1) + (nely + 1 - y)) - 2;
-                    fixed_dofs[sum * 3 + 2] = 3 * (z * (nelx + 1) * (nely + 1) + (nely + 1 - y)) - 3;
-                    sum++;
-                }
-            }
-
-            var all_dofs = new int[num_allDofs];
-            for (int i = 0; i < num_allDofs; i++)
-                all_dofs[i] = i;
-
-            // Obtain free dofs
-            free_dofs = all_dofs.Except(fixed_dofs).ToArray();
-
-            var U_freedof = new double[num_freeDofs];
-
-            Wrapper.Assembly_Solve(num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
+            Wrapper.Assembly_Solve(parallel, num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
 
             for (int i = 0; i < num_freeDofs; i++)
             {
@@ -565,34 +630,56 @@ namespace BESO
             48, 0, 0, 0, -24, -24, 48, 0, 24, 0, 0, 48, 24, 0, 0, 48, 0, 0, 48, 0, 48};
 
             Ke = new double[300];
-            for (int i = 0; i < 300; i++)
-                Ke[i] = E * w * (p1[i] + nu * p2[i]);
-
-
             Ke0 = new double[24 * 24];
 
-            int num = 0;
-            for (int i = 0; i < 24; i++)
+            if (parallel)
             {
-                for (int j = 0; j < 24; j++)
+                Parallel.For(0, 300, i =>
                 {
-                    if (i<= j)
-                    {
-                        Ke0[i * 24 + j] = Ke[num];
-                        num++;
-                    }
-                }
-            }
+                    Ke[i] = E * w * (p1[i] + nu * p2[i]);
+                });
 
-            for (int i = 0; i < 24; i++)
-            {
-                for (int j = 0; j < 24; j++)
+                int num = 0;
+                for (int i = 0; i < 24; i++)
                 {
-                    if (i > j)
+                    for (int j = 0; j < 24; j++)
                     {
-                        Ke0[i * 24 + j] = Ke0[j * 24 + i];
+                        if (i <= j)
+                        {
+                            Ke0[i * 24 + j] = Ke[num];
+                            num++;
+                        }
                     }
                 }
+                Parallel.For(0, 24, i =>
+                {
+                    for (int j = 0; j < 24; j++)
+                        if (i > j)
+                            Ke0[i * 24 + j] = Ke0[j * 24 + i];
+                });
+            }
+            else
+            {
+                for (int i = 0; i < 300; i++)
+                    Ke[i] = E * w * (p1[i] + nu * p2[i]);
+
+                int num = 0;
+                for (int i = 0; i < 24; i++)
+                {
+                    for (int j = 0; j < 24; j++)
+                    {
+                        if (i <= j)
+                        {
+                            Ke0[i * 24 + j] = Ke[num];
+                            num++;
+                        }
+                    }
+                }
+
+                for (int i = 0; i < 24; i++)
+                    for (int j = 0; j < 24; j++)
+                        if (i > j)
+                            Ke0[i * 24 + j] = Ke0[j * 24 + i];
             }
         }
         #endregion

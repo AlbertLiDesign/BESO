@@ -17,7 +17,7 @@
 #include <cholmod.h>
 #include<time.h> 
 
-extern "C" __declspec(dllexport) void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, 
+extern "C" __declspec(dllexport) void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets,
 	int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U);
 extern "C" __declspec(dllexport) void PreFE(int nelx, int nely, int* ik, int* jk);
 extern "C" __declspec(dllexport) double TransposeMultiply(int rows, int cols, double* A, double* U);

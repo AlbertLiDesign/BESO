@@ -98,7 +98,7 @@ void PreFE(int nelx, int nely, int* ik, int* jk)
     delete[] edofVec;
 }
 
-void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U)
+void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U)
 {
     std::vector<Triplet<double>> triplets;
     triplets.reserve(num_triplets);
@@ -123,10 +123,7 @@ void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* fr
     P.setFromTriplets(P_triplets.begin(), P_triplets.end());
 
     SparseMatrix<double> K_freedof = P * K * P.transpose();
-    //auto DK = MatrixXd(K_freedof);
-    //std::cout << DK << std::endl;
     //Eigen::saveMarket(K, "mat.mtx");
-    //saveMarket(K_freedof, "C:/Development/K_freedof_cpp.mtx");
 
     VectorXd F_freedof(num_freeDofs);
     for (int i = 0; i < num_freeDofs; i++)
@@ -134,21 +131,17 @@ void Assembly_Solve(int num_freeDofs, int num_allDofs, int num_triplets, int* fr
 
 
     VectorXd result;
-
-    clock_t _start;
-    clock_t _end;
-    _start = clock();
-    PardisoLLT<Eigen::SparseMatrix<double>,1> llt(K_freedof);
-    //llt.pardisoParameterArray()[59] = 0;
-    //mkl_set_num_threads(1);
+    PardisoLLT<Eigen::SparseMatrix<double>, 1> llt(K_freedof);
+    if (!parallel)
+    {
+        llt.pardisoParameterArray()[59] = 0;
+        mkl_set_num_threads(1);
+    }
     //CholmodSimplicialLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
     //CholmodSupernodalLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
     llt.analyzePattern(K_freedof);
     llt.factorize(K_freedof);
     result = llt.solve(F_freedof);
-    _end = clock();
-    double endtime = (double)(_end - _start) / CLOCKS_PER_SEC;
-    cout << "Solving cost:" << endtime * 1000 << "ms" << endl;	//msÎªµ¥Î»
     Eigen::VectorXd::Map(U, result.rows()) = result;
 }
 
