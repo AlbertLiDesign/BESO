@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace BESO
 {
@@ -11,15 +12,29 @@ namespace BESO
 
         private static void testBESO3D()
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             BESO3D beso = new BESO3D(3.0, 0.5);
-            beso.parallel = false;
-            beso.Initialize(4, 2, 3);
+            beso.Initialize(40, 20, 30, true);
             Console.WriteLine(beso.ModelInfo());
+
+            sw.Stop();
+            Console.WriteLine(
+                "======================= Init. time: "
+                + sw.ElapsedMilliseconds.ToString()
+                + " =======================");
 
             while (!beso.convergence)
             {
+                sw.Restart();
                 beso.Optimize();
+                sw.Stop();
                 Console.WriteLine(beso.info);
+                Console.WriteLine(
+                    "======================= It. time: " 
+                    + sw.ElapsedMilliseconds.ToString() 
+                    + " =======================");
                 //beso.WriteXe(@"E:\TestData");
             }
             //Console.WriteLine(beso.optInfo);

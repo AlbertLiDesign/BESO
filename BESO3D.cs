@@ -247,8 +247,8 @@ namespace BESO
                 optInfo.Append("Change: " + delta.ToString() + '\n');
                 #endregion
 
-                info = "Iter: " + iter.ToString() + ", Volume: " + vol.ToString()
-                    + ", Compliance: " + Compliance.ToString() + ", Change: " + delta.ToString();
+                info = "Iter: " + iter.ToString() + ", Volume: " + Math.Round(vol,3).ToString()
+                    + ", Compliance: " + Math.Round(Compliance, 3).ToString() + ", Change: " + Math.Round(delta, 3).ToString();
             }
             else
             {
@@ -259,7 +259,7 @@ namespace BESO
         {
             int rminf = (int)Math.Floor(rmin);
 
-            ih = new int[(int)(nEl * Math.Pow((2 * rminf - 1), 2))];
+            ih = new int[(int)(nEl * Math.Pow((2 * rminf - 1), 3))];
             jh = new int[ih.Length];
             vh = new double[ih.Length];
             sh = new double[nEl];
@@ -688,8 +688,9 @@ namespace BESO
         public StringBuilder ModelInfo()
         {
             StringBuilder report = new StringBuilder("=================== Model Info ===================" + '\n');
-            report.Append("Opt Nodes: " + ((nelx + 1) * (nely + 1) * (nelz + 1)).ToString() + '\n');
-            report.Append("Opt Elements: " + (nelx * nely * nelz).ToString() + '\n');
+            report.Append("Nodes: " + ((nelx + 1) * (nely + 1) * (nelz + 1)).ToString() + '\n');
+            report.Append("Elements: " + (nelx * nely * nelz).ToString() + '\n');
+            report.Append("Parallel mode: " + parallel.ToString() + '\n');
             report.Append('\n');
             report.Append("=================== Parameters Info ===================" + '\n');
             report.Append("xCount: " + nelx.ToString() + '\n');

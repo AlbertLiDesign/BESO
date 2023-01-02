@@ -14,6 +14,7 @@ Noted that all math operations are run on C++.
 
 ## Usage
 
+### 2D BESO
 ```C#
 BESO2D beso = new BESO2D(3.0, 0.5); // filter radius = 3, target volume = 50%
 beso.Initialize(80, 50); // resolution 80 x 50
@@ -92,7 +93,114 @@ Iter: 44, Volume: 0.5, Compliance: 18.70753045609539, Change: 0.0002524614820453
 
 - If you want to visualize it, please manually output design variables by access `beso.Xe`.
 
+### 3D BESO
+Serial mode
+```C#
+static void Main(string[] args)
+{
+    Stopwatch sw = new Stopwatch();
+    sw.Start();
 
+    BESO3D beso = new BESO3D(3.0, 0.5);
+    beso.Initialize(40, 20, 30);
+    Console.WriteLine(beso.ModelInfo());
+
+    sw.Stop();
+    Console.WriteLine(
+        "======================= Init. time: "
+        + sw.ElapsedMilliseconds.ToString()
+        + " =======================");
+
+    while (!beso.convergence)
+    {
+        sw.Restart();
+        beso.Optimize();
+        sw.Stop();
+        Console.WriteLine(beso.info);
+        Console.WriteLine(
+            "======================= It. time: " 
+            + sw.ElapsedMilliseconds.ToString() 
+            + " =======================");
+    }
+    Console.ReadKey();
+}
+```
+
+Output:
+```
+=================== Model Info ===================
+Nodes: 26691
+Elements: 24000
+Parallel mode: False
+
+=================== Parameters Info ===================
+xCount: 40
+yCount: 20
+zCount: 30
+
+======================= Init. time: 439 =======================
+Iter: 1, Volume: 0.97, Compliance: 1.897, Change: 1
+======================= It. time: 12118 =======================
+Iter: 2, Volume: 0.941, Compliance: 1.897, Change: 1
+======================= It. time: 17979 =======================
+Iter: 3, Volume: 0.913, Compliance: 1.897, Change: 1
+======================= It. time: 18082 =======================
+......
+```
+
+Parallel mode:
+```C#
+static void Main(string[] args)
+{
+    Stopwatch sw = new Stopwatch();
+    sw.Start();
+
+    BESO3D beso = new BESO3D(3.0, 0.5);
+    beso.Initialize(40, 20, 30, true);
+    Console.WriteLine(beso.ModelInfo());
+
+    sw.Stop();
+    Console.WriteLine(
+        "======================= Init. time: "
+        + sw.ElapsedMilliseconds.ToString()
+        + " =======================");
+
+    while (!beso.convergence)
+    {
+        sw.Restart();
+        beso.Optimize();
+        sw.Stop();
+        Console.WriteLine(beso.info);
+        Console.WriteLine(
+            "======================= It. time: " 
+            + sw.ElapsedMilliseconds.ToString() 
+            + " =======================");
+    }
+    Console.ReadKey();
+}
+```
+
+Output:
+```
+=================== Model Info ===================
+Nodes: 26691
+Elements: 24000
+Parallel mode: True
+
+=================== Parameters Info ===================
+xCount: 40
+yCount: 20
+zCount: 30
+
+======================= Init. time: 725 =======================
+Iter: 1, Volume: 0.97, Compliance: 1.897, Change: 1
+======================= It. time: 4932 =======================
+Iter: 2, Volume: 0.941, Compliance: 1.762, Change: 1
+======================= It. time: 4826 =======================
+Iter: 3, Volume: 0.913, Compliance: 1.748, Change: 1
+======================= It. time: 4783 =======================
+......
+```
 
 ## References
 
