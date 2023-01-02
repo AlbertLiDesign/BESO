@@ -96,7 +96,7 @@ namespace BESO
 
         #region Constructors
         public BESO3D() { }
-        public BESO3D(double rmin, double vf, double ert = 0.02, int maxIter = 100)
+        public BESO3D(double rmin, double vf, double ert = 0.03, int maxIter = 100)
         {
             if (rmin <= 0.0)
                 throw new Exception("Rmin must be large than 0.");
@@ -199,18 +199,12 @@ namespace BESO
 
                 #region Flt
                 stopwatch.Restart();
-                Wrapper.Flt(dc.Length, dc, sh);
-
-                if (iter > 1)
-                    for (int k = 0; k < nelz; k++)
-                        for (int j = 0; j < nely; j++)
-                            for (int i = 0; i < nelx; i++)
-                            {
-                                int id = i * nely * nelz + j * nelz + k;
-                                dc[id] = (dc[id] + dc_old[id]) * 0.5;
-                            }
+                Wrapper.Flt3D(nEl, dc, sh);
 
                 // Record the sensitiveies in each step
+                if (iter > 1)
+                    for (int i = 0; i < nEl; i++)
+                        dc[i] = (dc[i] + dc_old[i]) * 0.5;
 
                 stopwatch.Stop();
                 #endregion
@@ -226,8 +220,6 @@ namespace BESO
                 #region Prepare report
                 optInfo.Append("ADD & DEL:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
                 #endregion
-
-
                 #region Checking Convergence
                 stopwatch.Restart();
 
@@ -278,7 +270,6 @@ namespace BESO
                     for (int j1 = 1; j1 <= nely; j1++)
                     {
                         var e1 = (k1 - 1) * nelx * nely + (i1 - 1) * nely + j1;
-                        //var e1 = (i1 - 1) * nely * nelz + (j1 - 1) * nelz + k1;
                         for (int k2 = Math.Max(k1 - rminf + 1, 1); k2 <= Math.Min(k1 + rminf - 1, nelz); k2++)
                         {
                             for (int i2 = Math.Max(i1 - rminf + 1, 1); i2 <= Math.Min(i1 + rminf - 1, nelx); i2++)
@@ -286,7 +277,6 @@ namespace BESO
                                 for (int j2 = Math.Max(j1 - rminf + 1, 1); j2 <= Math.Min(j1 + rminf - 1, nely); j2++)
                                 {
                                     var e2 = (k2 - 1) * nelx * nely + (i2 - 1) * nely + j2;
-                                    //var e2 = (i2 - 1) * nely * nelz + (j2 - 1) * nelz + k2;
                                     ih[sum] = e1 - 1;
                                     jh[sum] = e2 - 1;
                                     vh[sum] = Math.Max(0.0, rmin - Math.Sqrt((i1 - i2) * (i1 - i2) + (j1 - j2) * (j1 - j2) + (k1 - k2) * (k1 - k2)));
@@ -310,17 +300,10 @@ namespace BESO
             {
                 th = (highest + lowest) * 0.5;
                 double sum = 0.0;
-                for (int k = 0; k < nelz; k++)
+                for (int i = 0; i < nEl; i++)
                 {
-                    for (int j = 0; j < nely; j++)
-                    {
-                        for (int i = 0; i < nelx; i++)
-                        {
-                            int id = i * nely * nelz + j * nelz + k;
-                            Xe[id] = dc[id] > th ? 1.0 : 1e-3;
-                            sum += Xe[j * nelx + i];
-                        }
-                    }
+                    Xe[i] = dc[i] > th ? 1.0 : 1e-3;
+                    sum += Xe[i];
                 }
                 if (sum - vol > 0.0) lowest = th;
                 else highest = th;
@@ -405,95 +388,6 @@ namespace BESO
             jk = new int[24 * 24 * nEl];
 
             Wrapper.Cal_ik_jk(nEl, edofMat, ik, jk);
-        }
-        private void PreFE3D2(int nelx, int nely, int nelz)
-        {
-            int[,,] nodeNrs = new int[nelx + 1, nely + 1, nelz + 1];
-
-            for (int z = 0; z < nelz + 1; z++)
-            {
-                for (int y = 0; y < nely + 1; y++)
-                {
-                    for (int x = 0; x < nelx + 1; x++)
-                    {
-                        nodeNrs[x, y, z] = y * (nelx + 1) * (nelz + 1) + x * (nelz + 1) + z;
-                        //nodeNrs[x, y, z] = x * (nely + 1) * (nelz + 1) + y * (nelz + 1) + z;
-                    }
-                }
-            }
-
-            int[] cVec = new int[nEl];
-            for (int z = 0; z < nelz; z++)
-            {
-                for (int y = 0; y < nely; y++)
-                {
-                    for (int x = 0; x < nelx; x++)
-                    {
-                        cVec[y * nelx * nelz + x * nelz + z] = 3 * (nodeNrs[x, y, z] + 1) + 1;
-                        //cVec[x * nely * nelz + y * nelz + z] = 3 * (nodeNrs[x, y, z] + 1) + 1;
-                    }
-                }
-            }
-
-            int[,] cMat = new int[nEl, 24];
-
-            int[] edofs = new int[24]{
-                -3, -2, -1,
-                3 * (nelz + 1) -3, 3 * (nelz + 1) - 2, 3 * (nelz + 1) -1,
-                3 * (nelz + 1) * (nelx + 2) -3, 3 * (nelz + 1) * (nelx + 2) - 2, 3 * (nelz + 1) * (nelx + 2) - 1,
-                3 * (nelx + 1) * (nelz + 1) - 3, 3 * (nelx + 1) * (nelz + 1) - 2, 3 * (nelx + 1) * (nelz + 1) - 1,
-
-                0, 1, 2,
-                3 * (nelz + 1), 3 * (nelz + 1) + 1, 3 * (nelz + 1) + 2,
-                3 * (nelz + 1) * (nelx + 2), 3 * (nelz + 1) * (nelx + 2) + 1, 3 * (nelz + 1) * (nelx + 2) + 2,
-                3 * (nelz + 1) * (nelx + 1), 3 * (nelz + 1) * (nelx + 1) + 1, 3 * (nelz + 1) * (nelx + 1) + 2
-                };
-          
-
-            for (int i = 0; i < nEl; i++)
-            {
-                for (int j = 0; j < 24; j++)
-                {
-                    cMat[i, j] = cVec[i] + edofs[j];
-                }
-            }
-
-            var sI = new int[300];
-            var sII = new int[300];
-            int num = 0;
-            int num2 = 0;
-            for (int i = 0; i < 24; i++)
-            {
-                for (int j = i; j < 24; j++)
-                {
-                    sI[num] = j;
-                    sII[num] = num2;
-                    num++;
-                }
-                num2++;
-            }
-
-            ik = new int[300 * nEl];
-            jk = new int[300 * nEl];
-
-            for (int j = 0; j < nEl; j++)
-            {
-                for (int i = 0; i < 300; i++)
-                {
-                    var a = cMat[j, sI[i]] - 1;
-                    var b = cMat[j, sII[i]] - 1;
-                    if (a >= b)
-                    {
-                        ik[j * 300 + i] = a;
-                        jk[j * 300 + i] = b;
-                    }
-                    else
-                    {
-                        ik[j * 300 + i] = b;
-                        jk[j * 300 + i] = a;
-                    }
-                }
-            }
         }
         private void FE()
         {
@@ -627,23 +521,6 @@ namespace BESO
         }
         #endregion
 
-        private static int[,] KroneckerProduct(int[,] A , int[,] B)
-        {
-            int bHeight = B.GetLength(0);
-            int bWidth = B.GetLength(1);
-            int height = A.GetLength(0) * bHeight;
-            int width = A.GetLength(1) * bWidth;
-            var result = new int[height, width];
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    result[y, x] = (A[y / bHeight, x / bWidth] - 1) * B[y % bHeight, x % bWidth];
-                }
-            }
-            return result;
-        }
-
         #region Debug Methods
         public StringBuilder ModelInfo()
         {
@@ -684,26 +561,7 @@ namespace BESO
             sw.Flush();
             sw.Close();
             sw.Dispose();
-
         }
-
-        //public void WriteXe(string path)
-        //{
-        //    string output = path + '\\' + "Xe2.txt";
-        //    StreamWriter sw = new StreamWriter(output);
-
-        //    for (int i = 0; i < nelx; i++)
-        //    {
-        //        for (int j = 0; j < nely; j++)
-        //        {
-        //            sw.WriteLine(Xe[j * nelx + i].ToString());
-        //        }
-        //    }
-
-        //    sw.Flush();
-        //    sw.Close();
-        //    sw.Dispose();
-        //}
         #endregion
     }
 }

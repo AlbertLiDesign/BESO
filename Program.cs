@@ -12,7 +12,7 @@ namespace BESO
         private static void testBESO3D()
         {
             BESO3D beso = new BESO3D(3.0, 0.5);
-            beso.Initialize(10, 12, 3);
+            beso.Initialize(10, 9, 8);
             //beso.Initialize(10, 12, 3);
 
             Console.WriteLine(beso.ModelInfo());

@@ -1,7 +1,5 @@
 #include "Solver.h"
-#include<unsupported/Eigen/src/SparseExtra/MarketIO.h>
-#include <unsupported/Eigen/KroneckerProduct>
-#include<ctime>
+
 
 using namespace Eigen;
 using namespace std;
@@ -183,5 +181,14 @@ void Flt(int dc_length, double* dc, double* sh)
     Map<VectorXd> dc_(dc, dc_length);
     Map<VectorXd> sh_(sh, dc_length);
     VectorXd result = (H.selfadjointView<Lower>() * dc_).array() / sh_.array();    
+    Eigen::VectorXd::Map(dc, result.rows()) = result;
+}
+
+void Flt3D(int nEl, double* dc, double* sh)
+{
+    VectorXd A(nEl);
+    for (size_t i = 0; i < nEl; i++)
+        A(i) = dc[i] / sh[i];
+    VectorXd result = H.selfadjointView<Lower>() * A;
     Eigen::VectorXd::Map(dc, result.rows()) = result;
 }
