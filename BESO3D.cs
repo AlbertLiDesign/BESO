@@ -4,10 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 using System.IO;
-using MathNet.Numerics.LinearAlgebra.Double;
-using System.Globalization;
 
 namespace BESO
 {
