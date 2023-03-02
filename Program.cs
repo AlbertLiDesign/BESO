@@ -7,7 +7,12 @@ namespace BESO
     {
         static void Main(string[] args)
         {
-            testBESO3D();
+            Stopwatch stopwatch= new Stopwatch();
+            stopwatch.Start();
+            testBESO2D();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
+            Console.ReadKey();
         }
 
         private static void testBESO3D()
@@ -43,20 +48,23 @@ namespace BESO
 
         private static void testBESO2D()
         {
-            BESO2D beso = new BESO2D(3.0, 0.5);
-            beso.Initialize(8, 5);
+            Stopwatch stopwatch= new Stopwatch();
+
+            BESO2D beso = new BESO2D(3.0, 0.5, 0.02, 3, 200);
+            beso.outputInfo = true;
+            beso.Initialize(1000, 1000);
 
             Console.WriteLine(beso.ModelInfo());
 
             while (!beso.convergence)
             {
+                stopwatch.Restart();
                 beso.Optimize();
                 Console.WriteLine(beso.info);
-
-                //beso.WriteXe(@"E:\TestData");
+                stopwatch.Stop();
+                Console.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
             }
-            Console.WriteLine(beso.optInfo);
-            Console.ReadKey();
+            //Console.WriteLine(beso.optInfo);
         }
     }
 }

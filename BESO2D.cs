@@ -11,7 +11,6 @@ namespace BESO
 {
     public class BESO2D
     {
-        public bool parallel = true;
         #region Resolution
         public int nelx;
         public int nely;
@@ -101,8 +100,12 @@ namespace BESO
 
         private Stopwatch stopwatch;
 
+        #region Settings
+        public bool parallel = true;
         public bool OutputK = false;
         public bool changeSupports = true;
+        public bool outputInfo = false;
+        #endregion
         public BESO2D() { }
         public BESO2D(double rmin, double vf, double ert = 0.02, double p = 3.0, int maxIter = 100)
         {
@@ -116,39 +119,7 @@ namespace BESO
             this.ert = ert;
             this.maxIter = maxIter;
             this.rmin = rmin;
-
-            stopwatch = new Stopwatch();
-            optInfo = new StringBuilder("====================== Optimization ======================" + '\n');
         }
-        public BESO2D(BESO2D ibeso)
-        {
-            vf = ibeso.vf;
-            p = ibeso.p;
-            ert = ibeso.ert;
-            maxIter = ibeso.maxIter;
-            rmin = ibeso.rmin;
-
-            nelx = ibeso.nelx;
-            nely = ibeso.nely;
-
-            Xe = (double[])ibeso.Xe.Clone();
-            dc = (double[])ibeso.dc.Clone();
-            dc_old = (double[])ibeso.dc_old.Clone();
-            Ke = (double[])ibeso.Ke.Clone();
-
-            ih = (int[])ibeso.ih.Clone();
-            jh = (int[])ibeso.jh.Clone();
-            vh = (double[])ibeso.vh.Clone();
-            sh = (double[])ibeso.sh.Clone();
-
-            ik = (int[])ibeso.ik.Clone();
-            jk = (int[])ibeso.jk.Clone();
-
-            stopwatch = new Stopwatch();
-
-            optInfo = new StringBuilder("====================== Optimization ======================" + '\n');
-        }
-
 
         public void Initialize(int nelx, int nely)
         {
@@ -162,103 +133,159 @@ namespace BESO
             Xe = new double[nely* nelx];
             Array.Fill(Xe, 1.0);
 
-            stopwatch.Start();
-            GetKe();
-            ik = new int[nelx * nely * 8 * 8];
-            jk = new int[nelx * nely * 8 * 8];
-            Wrapper.PreFE(nelx, nely, ik, jk);
-            stopwatch.Stop();
-            initInfo.Append("PreFE: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
+            if (outputInfo)
+            {
+                optInfo = new StringBuilder("====================== Optimization ======================" + '\n');
+                stopwatch = new Stopwatch();
+                stopwatch.Start();
+                GetKe();
+                ik = new int[nelx * nely * 8 * 8];
+                jk = new int[nelx * nely * 8 * 8];
+                Wrapper.PreFE(nelx, nely, ik, jk);
+                stopwatch.Stop();
+                initInfo.Append("PreFE: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
 
-            stopwatch.Restart();
-            PreFlt();
-            stopwatch.Stop();
-            initInfo.Append("PreFlt: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
+                stopwatch.Restart();
+                PreFlt();
+                stopwatch.Stop();
+                initInfo.Append("PreFlt: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
+            }
+            else
+            {
+                GetKe();
+                ik = new int[nelx * nely * 8 * 8];
+                jk = new int[nelx * nely * 8 * 8];
+                Wrapper.PreFE(nelx, nely, ik, jk);
+                PreFlt();
+            }
+
         }
         public void Optimize()
         {
             if (delta > 0.001 && iter < maxIter)
             {
-                optInfo.Append("====================== Iter: " + iter.ToString() + " ======================" + '\n');
-                iter += 1;
-                vol = Math.Max(vf, vol * (1.0 - ert));
-
-                #region FEA
-                stopwatch.Restart();
-                FE();
-                stopwatch.Stop();
-                #endregion
-                #region Prepare report
-                optInfo.Append("FEA:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
-                #endregion
-
-                #region Get DC
-                stopwatch.Restart();
-                GetDc();
-                HistoryC.Add(Compliance);
-                stopwatch.Stop();
-                #endregion
-                #region Prepare report
-                optInfo.Append("Getting Sensitivity:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
-                #endregion
-
-                #region Flt
-                stopwatch.Restart();
-                Wrapper.Flt(dc.Length, dc, sh);
-
-                if (iter > 1)
-                    for (int j = 0; j < nely; j++)
-                    {
-                        for (int i = 0; i < nelx; i++)
-                        {
-                            dc[i * nely + j] = (dc[i * nely + j] + dc_old[i * nely + j]) * 0.5;
-                        }
-                    }
-
-                // Record the sensitiveies in each step
-                dc_old = (double[])dc.Clone();
-                stopwatch.Stop();
-                #endregion
-                #region Prepare report
-                optInfo.Append("Flt:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
-                #endregion
-
-                #region ADD & DEL
-                stopwatch.Restart();
-                ADD_DEL(vol);
-                stopwatch.Stop();
-                #endregion
-                #region Prepare report
-                optInfo.Append("ADD & DEL:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
-                #endregion
-
-
-                #region Checking Convergence
-                stopwatch.Restart();
-
-                // Check convergence 
-                if (iter > 10)
+                if (outputInfo)
                 {
-                    var newV = 0.0;
-                    var lastV = 0.0;
-                    for (int i = 1; i < 6; i++)
+                    optInfo.Append("====================== Iter: " + iter.ToString() + " ======================" + '\n');
+                    iter += 1;
+                    vol = Math.Max(vf, vol * (1.0 - ert));
+
+                    #region FEA
+                    stopwatch.Restart();
+                    FE();
+                    stopwatch.Stop();
+                    #endregion
+                    #region Prepare report
+                    optInfo.Append("FEA:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
+                    #endregion
+
+                    #region Get DC
+                    stopwatch.Restart();
+                    GetDc();
+                    HistoryC.Add(Compliance);
+                    stopwatch.Stop();
+                    #endregion
+                    #region Prepare report
+                    optInfo.Append("Getting Sensitivity:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
+                    #endregion
+
+                    #region Flt
+                    stopwatch.Restart();
+                    Wrapper.Flt(dc.Length, dc, sh);
+
+                    if (iter > 1)
+                        for (int j = 0; j < nely; j++)
+                        {
+                            for (int i = 0; i < nelx; i++)
+                            {
+                                dc[i * nely + j] = (dc[i * nely + j] + dc_old[i * nely + j]) * 0.5;
+                            }
+                        }
+
+                    // Record the sensitiveies in each step
+                    dc_old = (double[])dc.Clone();
+                    stopwatch.Stop();
+                    #endregion
+                    #region Prepare report
+                    optInfo.Append("Flt:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
+                    #endregion
+
+                    #region ADD & DEL
+                    stopwatch.Restart();
+                    ADD_DEL(vol);
+                    stopwatch.Stop();
+                    #endregion
+                    #region Prepare report
+                    optInfo.Append("ADD & DEL:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
+                    #endregion
+
+
+                    #region Checking Convergence
+                    stopwatch.Restart();
+
+                    // Check convergence 
+                    if (iter > 10)
                     {
-                        newV += HistoryC[HistoryC.Count - i];
-                        lastV += HistoryC[HistoryC.Count - 5 - i];
+                        var newV = 0.0;
+                        var lastV = 0.0;
+                        for (int i = 1; i < 6; i++)
+                        {
+                            newV += HistoryC[HistoryC.Count - i];
+                            lastV += HistoryC[HistoryC.Count - 5 - i];
+                        }
+                        delta = Math.Abs((newV - lastV) / lastV);
                     }
-                    delta = Math.Abs((newV - lastV) / lastV);
+                    #endregion
+                    #region Prepare report
+                    optInfo.Append("Checking Convergence:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
+
+                    optInfo.Append("Volume: " + vol.ToString() + '\n');
+                    optInfo.Append("Compliance: " + Compliance.ToString() + '\n');
+                    optInfo.Append("Change: " + delta.ToString() + '\n');
+                    #endregion
                 }
-                #endregion
-                #region Prepare report
-                optInfo.Append("Checking Convergence:" + stopwatch.Elapsed.TotalMilliseconds + '\n');
+                else
+                {
+                    iter += 1;
+                    vol = Math.Max(vf, vol * (1.0 - ert));
 
-                optInfo.Append("Volume: " + vol.ToString() + '\n');
-                optInfo.Append("Compliance: " + Compliance.ToString() + '\n');
-                optInfo.Append("Change: " + delta.ToString() + '\n');
-                #endregion
+                    FE();
+                    GetDc();
+                    HistoryC.Add(Compliance);
 
-                info = "Iter: " + iter.ToString() + ", Volume: " + vol.ToString()
-                    + ", Compliance: " + Compliance.ToString() + ", Change: " + delta.ToString();
+                    Wrapper.Flt(dc.Length, dc, sh);
+
+                    if (iter > 1)
+                        for (int j = 0; j < nely; j++)
+                        {
+                            for (int i = 0; i < nelx; i++)
+                            {
+                                dc[i * nely + j] = (dc[i * nely + j] + dc_old[i * nely + j]) * 0.5;
+                            }
+                        }
+
+                    // Record the sensitiveies in each step
+                    dc_old = (double[])dc.Clone();
+
+                    ADD_DEL(vol);
+
+                    // Check convergence 
+                    if (iter > 10)
+                    {
+                        var newV = 0.0;
+                        var lastV = 0.0;
+                        for (int i = 1; i < 6; i++)
+                        {
+                            newV += HistoryC[HistoryC.Count - i];
+                            lastV += HistoryC[HistoryC.Count - 5 - i];
+                        }
+                        delta = Math.Abs((newV - lastV) / lastV);
+                    }
+                }
+
+
+                info = "It.: " + iter.ToString() + ", Obj.: " + Compliance.ToString() + 
+                    ", Vol.: " + vol.ToString() + ", ch.: " + delta.ToString();
             }
             else
             {
