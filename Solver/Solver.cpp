@@ -132,6 +132,7 @@ void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_tr
 
     VectorXd result;
     PardisoLLT<Eigen::SparseMatrix<double>, 1> llt(K_freedof);
+
     if (!parallel)
     {
         llt.pardisoParameterArray()[59] = 0;
@@ -139,9 +140,11 @@ void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_tr
     }
     //CholmodSimplicialLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
     //CholmodSupernodalLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
+    llt.pardisoParameterArray()[59] = 2; // Set the solver to use the CG method
     llt.analyzePattern(K_freedof);
     llt.factorize(K_freedof);
     result = llt.solve(F_freedof);
+
     Eigen::VectorXd::Map(U, result.rows()) = result;
 }
 
