@@ -9,7 +9,7 @@ using System.IO;
 
 namespace BESO
 {
-    public class BESO2D
+    public class BESO2D_time
     {
         #region Resolution
         public int nelx;
@@ -100,12 +100,20 @@ namespace BESO
 
         private Stopwatch stopwatch;
 
+        private double prefetime;
+        private double preflttime;
+        private double featime;
+        private double flttime;
+        private double othertime;
+
         #region Settings
         public bool parallel = true;
+        public bool OutputK = false;
         public bool changeSupports = true;
+        public bool outputInfo = false;
         #endregion
-        public BESO2D() { }
-        public BESO2D(double rmin, double vf, double ert = 0.02, double p = 3.0, int maxIter = 100)
+        public BESO2D_time() { }
+        public BESO2D_time(double rmin, double vf, double ert = 0.02, double p = 3.0, int maxIter = 100)
         {
             if (rmin <= 0.0)
                 throw new Exception("Rmin must be large than 0.");
@@ -128,27 +136,58 @@ namespace BESO
 
             dc = new double[nely * nelx];
             dc_old = new double[nely * nelx];
-            Xe = new double[nely* nelx];
+            Xe = new double[nely * nelx];
             Array.Fill(Xe, 1.0);
 
-                GetKe();
-                ik = new int[nelx * nely * 8 * 8];
-                jk = new int[nelx * nely * 8 * 8];
-                Wrapper.PreFE(nelx, nely, ik, jk);
-                PreFlt();
+            optInfo = new StringBuilder("====================== Optimization ======================" + '\n');
+            stopwatch = new Stopwatch();
+            stopwatch.Start();
+            GetKe();
+            ik = new int[nelx * nely * 8 * 8];
+            jk = new int[nelx * nely * 8 * 8];
+            Wrapper.PreFE(nelx, nely, ik, jk);
+            stopwatch.Stop();
+            initInfo.Append("PreFE: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
+            prefetime = stopwatch.Elapsed.TotalMilliseconds;
+
+            stopwatch.Restart();
+            PreFlt();
+            stopwatch.Stop();
+            initInfo.Append("PreFlt: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
+            preflttime = stopwatch.Elapsed.TotalMilliseconds;
+
+            featime = 0;
+            flttime = 0;
+            othertime = 0;
         }
         public void Optimize()
         {
             if (delta > 0.001 && iter < maxIter)
             {
-
                 iter += 1;
                 vol = Math.Max(vf, vol * (1.0 - ert));
 
+                #region FEA
+                stopwatch.Restart();
                 FE();
+                stopwatch.Stop();
+                #endregion
+                #region Prepare report
+                featime += stopwatch.Elapsed.TotalMilliseconds;
+                #endregion
+
+                #region Get DC
+                stopwatch.Restart();
                 GetDc();
                 HistoryC.Add(Compliance);
+                stopwatch.Stop();
+                #endregion
+                #region Prepare report
+                othertime += stopwatch.Elapsed.TotalMilliseconds;
+                #endregion
 
+                #region Flt
+                stopwatch.Restart();
                 Wrapper.Flt(dc.Length, dc, sh);
 
                 if (iter > 1)
@@ -162,8 +201,24 @@ namespace BESO
 
                 // Record the sensitiveies in each step
                 dc_old = (double[])dc.Clone();
+                stopwatch.Stop();
+                #endregion
+                #region Prepare report
+                flttime += stopwatch.Elapsed.TotalMilliseconds;
+                #endregion
 
+                #region ADD & DEL
+                stopwatch.Restart();
                 ADD_DEL(vol);
+                stopwatch.Stop();
+                #endregion
+                #region Prepare report
+                othertime += stopwatch.Elapsed.TotalMilliseconds;
+                #endregion
+
+
+                #region Checking Convergence
+                stopwatch.Restart();
 
                 // Check convergence 
                 if (iter > 10)
@@ -177,6 +232,10 @@ namespace BESO
                     }
                     delta = Math.Abs((newV - lastV) / lastV);
                 }
+                #endregion
+                #region Prepare report
+                othertime += stopwatch.Elapsed.TotalMilliseconds;
+                #endregion
 
                 info = "It.: " + iter.ToString() + ", Obj.: " + Compliance.ToString() +
                     ", Vol.: " + vol.ToString() + ", ch.: " + delta.ToString();
@@ -244,9 +303,7 @@ namespace BESO
         private void GetDc()
         {
             Compliance = 0.0;
-            double[] C = new double[nelx * nely];
-
-            Parallel.For(0, nely, ely=>
+            for (int ely = 0; ely < nely; ely++)
             {
                 for (int elx = 0; elx < nelx; elx++)
                 {
@@ -258,11 +315,10 @@ namespace BESO
 
                     double v = Wrapper.TransposeMultiply(8, 8, Ke, Ue);
 
-                    C[elx * nely + ely] = 0.5 * Math.Pow(Xe[ely*nelx + elx], p) * v;
+                    Compliance += 0.5 * Math.Pow(Xe[ely*nelx + elx], p) * v;
                     dc[elx * nely + ely] = 0.5 * Math.Pow(Xe[ely* nelx + elx], p - 1) * v;
                 }
-            });
-            Compliance = C.Sum();
+            }
         }
         private void FE()
         {
@@ -272,7 +328,7 @@ namespace BESO
 
             // Assemble stiffness matrix with all DOFs
             vk = new double[64 * nelx * nely];
-            Parallel.For(0, nelx, i =>
+            for (int i = 0; i < nelx; i++)
             {
                 for (int j = 0; j < nely; j++)
                 {
@@ -285,7 +341,7 @@ namespace BESO
                         }
                     }
                 }
-            });
+            }
 
             var F = new double[num_allDofs];
             U = new double[num_allDofs];
@@ -340,6 +396,14 @@ namespace BESO
         }
 
         #region Debug Methods
+        public void PrintTime()
+        {
+            Console.WriteLine("PreFE time:" + '\t' + prefetime.ToString());
+            Console.WriteLine("PreFlt time:" + '\t' + preflttime.ToString());
+            Console.WriteLine("FEA time:" + '\t' + (featime / (iter + 1)).ToString());
+            Console.WriteLine("Flt time:" + '\t' + (flttime / (iter + 1)).ToString());
+            Console.WriteLine("Other time:" + '\t' + (othertime / (iter + 1)).ToString());
+        }
         public StringBuilder ModelInfo()
         {
             StringBuilder report = new StringBuilder("=================== Model Info ===================" + '\n');
