@@ -5,6 +5,8 @@ using namespace std;
 
 SparseMatrix<double> H;
 
+
+
 void PrintMatrix(int row, int col, double* val)
 {
     MatrixXd K(row, col);
@@ -43,109 +45,234 @@ void Cal_ik_jk(int nEl, int* edofMat, int* ik, int* jk)
         }
     }
 }
-void PreFE(int nelx, int nely, int* ik, int* jk)
+void PreFE(bool parallel, int nelx, int nely, int* ik, int* jk)
 {
     MatrixXi nodenrs(nely + 1, nelx + 1);
     int* edofVec = new int[nelx * nely];
     MatrixXi edofMat(nelx * nely, 8);
     int edofs[8] = { -1, 0, 2 * nely + 1, 2 * nely + 2, 2 * nely + 3, 2 * nely + 4, 1, 2 };
 
-    for (size_t y = 0; y < nely + 1; y++)
+    if (parallel)
     {
-        for (size_t x = 0; x < nelx + 1; x++)
+#pragma omp parallel
         {
-            nodenrs(y, x) = x * (nely + 1) + y;
+#pragma omp for  
+            for (int y = 0; y < nely + 1; y++)
+            {
+                for (int x = 0; x < nelx + 1; x++)
+                {
+                    nodenrs(y, x) = x * (nely + 1) + y;
+                }
+            }
+        }
+#pragma omp parallel
+        {
+#pragma omp for  
+            for (int y = 0; y < nely; y++)
+            {
+                for (int x = 0; x < nelx; x++)
+                {
+                    edofVec[y + x * nely] = 2 * nodenrs(y, x) + 1;
+                }
+            }
+        }
+#pragma omp parallel
+        {
+#pragma omp for  
+            for (int i = 0; i < nelx * nely; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    edofMat(i, j) = edofVec[i] + edofs[j];
+                }
+            }
+        }
+
+        auto a = kroneckerProduct(edofMat, MatrixXi::Ones(8, 1)).eval();
+        auto za = a.transpose();
+        auto b = kroneckerProduct(edofMat, MatrixXi::Ones(1, 8)).eval();
+        auto zb = b.transpose();
+
+#pragma omp parallel
+        {
+#pragma omp for  
+            for (int i = 0; i < za.cols(); i++)
+            {
+                for (int j = 0; j < za.rows(); j++)
+                {
+                    ik[i * za.rows() + j] = za(j, i);
+                }
+            }
+        }
+#pragma omp parallel
+        {
+#pragma omp for  
+            for (int i = 0; i < zb.cols(); i++)
+            {
+                for (int j = 0; j < zb.rows(); j++)
+                {
+                    jk[i * zb.rows() + j] = zb(j, i);
+                }
+            }
+        }
+    }
+    else
+    {
+        for (int y = 0; y < nely + 1; y++)
+        {
+            for (int x = 0; x < nelx + 1; x++)
+            {
+                nodenrs(y, x) = x * (nely + 1) + y;
+            }
+        }
+        for (int y = 0; y < nely; y++)
+        {
+            for (int x = 0; x < nelx; x++)
+            {
+                edofVec[y + x * nely] = 2 * nodenrs(y, x) + 1;
+            }
+        }
+        for (int i = 0; i < nelx * nely; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                edofMat(i, j) = edofVec[i] + edofs[j];
+            }
+        }
+        auto a = kroneckerProduct(edofMat, MatrixXi::Ones(8, 1)).eval();
+        auto za = a.transpose();
+        auto b = kroneckerProduct(edofMat, MatrixXi::Ones(1, 8)).eval();
+        auto zb = b.transpose();
+        for (int i = 0; i < za.cols(); i++)
+        {
+            for (int j = 0; j < za.rows(); j++)
+            {
+                ik[i * za.rows() + j] = za(j, i);
+            }
+        }
+        for (int i = 0; i < zb.cols(); i++)
+        {
+            for (int j = 0; j < zb.rows(); j++)
+            {
+                jk[i * zb.rows() + j] = zb(j, i);
+            }
         }
     }
 
-    for (size_t y = 0; y < nely; y++)
-    {
-        for (size_t x = 0; x < nelx; x++)
-        {
-            edofVec[y + x * nely] = 2 * nodenrs(y, x) + 1;   
-        }
-    }
-
-    for (size_t i = 0; i < nelx * nely; i++)
-    {
-        for (size_t j = 0; j < 8; j++)
-        {
-            edofMat(i, j) = edofVec[i] + edofs[j];
-        }
-    }
-
-    auto a = kroneckerProduct(edofMat, MatrixXi::Ones(8, 1)).eval();
-    auto za = a.transpose();
-    auto b = kroneckerProduct(edofMat, MatrixXi::Ones(1, 8)).eval();
-    auto zb = b.transpose();
-
-    for (size_t i = 0; i < za.cols(); i++)
-    {
-        for (size_t j = 0; j < za.rows(); j++)
-        {
-            ik[i * za.rows() + j] = za(j, i);
-        }
-    }
-
-    for (size_t i = 0; i < zb.cols(); i++)
-    {
-        for (size_t j = 0; j < zb.rows(); j++)
-        {
-            jk[i * zb.rows() + j] = zb(j, i);
-        }
-    }
 
     delete[] edofVec;
 }
 
 void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U)
 {
-    std::vector<Triplet<double>> triplets;
-    triplets.reserve(num_triplets);
-
-    for (int i = 0; i < num_triplets; i++)
+    if (parallel)
     {
-        triplets.push_back(Triplet<double>(ik[i], jk[i], sk[i]));
+        Eigen::initParallel();
+        Eigen::setNbThreads(omp_get_max_threads());
+        auto start2 = std::chrono::high_resolution_clock::now();
+        std::vector<Triplet<double>> triplets(num_triplets);
+
+        #pragma omp parallel
+        {
+        #pragma omp for  
+            for (int i = 0; i < num_triplets; i++)
+            {
+                triplets[i] = Triplet<double>(ik[i], jk[i], sk[i]);
+            }
+        }
+
+        SparseMatrix<double> K(num_allDofs, num_allDofs);
+        K.setFromTriplets(triplets.begin(), triplets.end());
+
+        std::vector<Triplet<double>> P_triplets(num_freeDofs);
+        #pragma omp parallel
+        {
+            #pragma omp for  
+            for (int i = 0; i < num_freeDofs; i++)
+            {
+                P_triplets[i] = Triplet<double>(i, free_dofs[i], 1.0);
+            }
+        }
+
+        SparseMatrix<double> P(num_freeDofs, num_allDofs);
+        P.setFromTriplets(P_triplets.begin(), P_triplets.end());
+        auto end2 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> elapsed2 = end2 - start2;
+        std::cout << "Create sparse matrix: " << elapsed2.count() << std::endl;
+
+        SparseMatrix<double> K_freedof = P * K * P.transpose();
+
+
+        VectorXd F_freedof(num_freeDofs);
+        for (int i = 0; i < num_freeDofs; i++)
+            F_freedof(i) = F[free_dofs[i]];
+
+        VectorXd result;
+        PardisoLLT<Eigen::SparseMatrix<double>, 1> llt(K_freedof);
+
+        //if (!parallel)
+        //{
+        //    llt.pardisoParameterArray()[59] = 0;
+        //    mkl_set_num_threads(1);
+        //}
+
+        //llt.pardisoParameterArray()[59] = 2; // Set the solver to use the CG method
+        auto start = std::chrono::high_resolution_clock::now();
+        llt.analyzePattern(K_freedof);
+        llt.factorize(K_freedof);
+        result = llt.solve(F_freedof);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> elapsed = end - start;
+        std::cout << "Solver: " << elapsed.count() << std::endl;
+
+        Eigen::VectorXd::Map(U, result.rows()) = result;
     }
-    
-    SparseMatrix<double> K(num_allDofs, num_allDofs);
-    K.setFromTriplets(triplets.begin(), triplets.end());
-
-    std::vector<Triplet<double>> P_triplets;
-    P_triplets.reserve(num_freeDofs);
-
-    for (int i = 0; i < num_freeDofs; i++)
+    else
     {
-        P_triplets.push_back(Triplet<double>(i, free_dofs[i], 1.0));
+        auto start2 = std::chrono::high_resolution_clock::now();
+        std::vector<Triplet<double>> triplets(num_triplets);
+
+        for (int i = 0; i < num_triplets; i++)
+        {
+            triplets[i] = Triplet<double>(ik[i], jk[i], sk[i]);
+        }
+
+        SparseMatrix<double> K(num_allDofs, num_allDofs);
+        K.setFromTriplets(triplets.begin(), triplets.end());
+
+        std::vector<Triplet<double>> P_triplets(num_freeDofs);
+
+        for (int i = 0; i < num_freeDofs; i++)
+        {
+            P_triplets[i] = Triplet<double>(i, free_dofs[i], 1.0);
+        }
+
+        SparseMatrix<double> P(num_freeDofs, num_allDofs);
+        P.setFromTriplets(P_triplets.begin(), P_triplets.end());
+        auto end2 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> elapsed2 = end2 - start2;
+        std::cout << "Assembly: " << elapsed2.count() << std::endl;
+
+        SparseMatrix<double> K_freedof = P * K * P.transpose();
+
+
+        VectorXd F_freedof(num_freeDofs);
+        for (int i = 0; i < num_freeDofs; i++)
+            F_freedof(i) = F[free_dofs[i]];
+
+
+        VectorXd result;
+        PardisoLLT<Eigen::SparseMatrix<double>, 1> llt(K_freedof);
+        auto start = std::chrono::high_resolution_clock::now();
+        llt.analyzePattern(K_freedof);
+        llt.factorize(K_freedof);
+        result = llt.solve(F_freedof);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> elapsed = end - start;
+        std::cout << "Solver: " << elapsed.count() << std::endl;
+
+        Eigen::VectorXd::Map(U, result.rows()) = result;
     }
-
-    SparseMatrix<double> P(num_freeDofs, num_allDofs);
-    P.setFromTriplets(P_triplets.begin(), P_triplets.end());
-
-    SparseMatrix<double> K_freedof = P * K * P.transpose();
-    //Eigen::saveMarket(K, "mat.mtx");
-
-    VectorXd F_freedof(num_freeDofs);
-    for (int i = 0; i < num_freeDofs; i++)
-        F_freedof(i) = F[free_dofs[i]];
-
-
-    VectorXd result;
-    PardisoLLT<Eigen::SparseMatrix<double>, 1> llt(K_freedof);
-
-    if (!parallel)
-    {
-        llt.pardisoParameterArray()[59] = 0;
-        mkl_set_num_threads(1);
-    }
-    //CholmodSimplicialLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
-    //CholmodSupernodalLLT<Eigen::SparseMatrix<double>> llt(K_freedof);
-    //llt.pardisoParameterArray()[59] = 2; // Set the solver to use the CG method
-    llt.analyzePattern(K_freedof);
-    llt.factorize(K_freedof);
-    result = llt.solve(F_freedof);
-
-    Eigen::VectorXd::Map(U, result.rows()) = result;
 }
 
 double TransposeMultiply(int rows, int cols, double* A, double* U)

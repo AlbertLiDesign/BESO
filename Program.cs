@@ -9,7 +9,7 @@ namespace BESO
         {
             Stopwatch stopwatch= new Stopwatch();
             stopwatch.Start();
-            testBESO2DwithTime();
+            testBESO3DwithTime();
             stopwatch.Stop();
             Console.WriteLine("Total time:" + '\t' + stopwatch.ElapsedMilliseconds.ToString());
             Console.ReadKey();
@@ -46,12 +46,35 @@ namespace BESO
             Console.ReadKey();
         }
 
+        private static void testBESO3DwithTime()
+        {
+            Stopwatch stopwatch = new Stopwatch();
+
+            BESO3D_time beso = new BESO3D_time(3.0, 0.5, 0.02, 3, 200);
+            beso.Initialize(30, 20, 10);
+            beso.parallel = true;
+
+            Console.WriteLine(beso.ModelInfo());
+
+            while (!beso.convergence)
+            {
+                stopwatch.Restart();
+                beso.Optimize();
+                Console.WriteLine(beso.info);
+                stopwatch.Stop();
+                Console.WriteLine(stopwatch.ElapsedMilliseconds.ToString());
+                beso.PrintTime();
+            }
+            beso.PrintTime();
+            //Console.WriteLine(beso.optInfo);
+        }
         private static void testBESO2DwithTime()
         {
             Stopwatch stopwatch = new Stopwatch();
 
             BESO2D_time beso = new BESO2D_time(3.0, 0.5, 0.02, 3, 200);
-            beso.Initialize(640, 400);
+            beso.Initialize(80, 50);
+            beso.parallel = true;
 
             Console.WriteLine(beso.ModelInfo());
 

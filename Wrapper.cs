@@ -19,7 +19,7 @@ namespace BESO
         public static extern double TransposeMultiply(int rows, int cols, double[] A, double[] U);
 
         [DllImport("Solver.dll")]
-        public static extern void PreFE(int nelx, int nely, int[] ik, int[] jk);
+        public static extern void PreFE(bool parallel, int nelx, int nely, int[] ik, int[] jk);
 
         [DllImport("Solver.dll")]
         public static extern void Flt(int dc_length, double[] dc, double[] sh);

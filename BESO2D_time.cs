@@ -145,7 +145,7 @@ namespace BESO
             GetKe();
             ik = new int[nelx * nely * 8 * 8];
             jk = new int[nelx * nely * 8 * 8];
-            Wrapper.PreFE(nelx, nely, ik, jk);
+            Wrapper.PreFE(parallel, nelx, nely, ik, jk);
             stopwatch.Stop();
             initInfo.Append("PreFE: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
             prefetime = stopwatch.Elapsed.TotalMilliseconds;
@@ -171,8 +171,6 @@ namespace BESO
                 stopwatch.Restart();
                 FE();
                 stopwatch.Stop();
-                #endregion
-                #region Prepare report
                 featime += stopwatch.Elapsed.TotalMilliseconds;
                 #endregion
 
@@ -181,8 +179,6 @@ namespace BESO
                 GetDc();
                 HistoryC.Add(Compliance);
                 stopwatch.Stop();
-                #endregion
-                #region Prepare report
                 othertime += stopwatch.Elapsed.TotalMilliseconds;
                 #endregion
 
@@ -202,8 +198,6 @@ namespace BESO
                 // Record the sensitiveies in each step
                 dc_old = (double[])dc.Clone();
                 stopwatch.Stop();
-                #endregion
-                #region Prepare report
                 flttime += stopwatch.Elapsed.TotalMilliseconds;
                 #endregion
 
@@ -211,8 +205,6 @@ namespace BESO
                 stopwatch.Restart();
                 ADD_DEL(vol);
                 stopwatch.Stop();
-                #endregion
-                #region Prepare report
                 othertime += stopwatch.Elapsed.TotalMilliseconds;
                 #endregion
 
@@ -232,8 +224,6 @@ namespace BESO
                     }
                     delta = Math.Abs((newV - lastV) / lastV);
                 }
-                #endregion
-                #region Prepare report
                 othertime += stopwatch.Elapsed.TotalMilliseconds;
                 #endregion
 
@@ -328,7 +318,7 @@ namespace BESO
 
             // Assemble stiffness matrix with all DOFs
             vk = new double[64 * nelx * nely];
-            for (int i = 0; i < nelx; i++)
+            Parallel.For(0, nelx, i =>
             {
                 for (int j = 0; j < nely; j++)
                 {
@@ -341,7 +331,7 @@ namespace BESO
                         }
                     }
                 }
-            }
+            });
 
             var F = new double[num_allDofs];
             U = new double[num_allDofs];
@@ -349,21 +339,18 @@ namespace BESO
             // Define force vector
             F[2 * (nelx + 1) * (nely + 1) - nely - 1] = -1.0;
 
-            if (changeSupports)
-            {
-                // Define fixed dofs
-                var fixed_dofs = new int[num_fixedDofs];
-                for (int i = 0; i < num_fixedDofs; i++)
-                    fixed_dofs[i] = i;
+            // Define fixed dofs
+            var fixed_dofs = new int[num_fixedDofs];
+            for (int i = 0; i < num_fixedDofs; i++)
+                fixed_dofs[i] = i;
 
-                var all_dofs = new int[num_allDofs];
-                for (int i = 0; i < num_allDofs; i++)
-                    all_dofs[i] = i;
+            var all_dofs = new int[num_allDofs];
+            for (int i = 0; i < num_allDofs; i++)
+                all_dofs[i] = i;
 
-                // Obtain free dofs
-                free_dofs = all_dofs.Except(fixed_dofs).ToArray();
-                changeSupports = false;
-            }
+            // Obtain free dofs
+            free_dofs = all_dofs.Except(fixed_dofs).ToArray();
+            changeSupports = false;
 
             var U_freedof = new double[num_freeDofs];
             Wrapper.Assembly_Solve(parallel, num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, vk, F, U_freedof);
