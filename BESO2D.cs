@@ -134,7 +134,7 @@ namespace BESO
                 GetKe();
                 ik = new int[nelx * nely * 8 * 8];
                 jk = new int[nelx * nely * 8 * 8];
-                Wrapper.PreFE(parallel, nelx, nely, ik, jk);
+                Wrapper.PreFE(nelx, nely, ik, jk);
                 PreFlt();
         }
         public void Optimize()

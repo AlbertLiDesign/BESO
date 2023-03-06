@@ -145,7 +145,7 @@ namespace BESO
             GetKe();
             ik = new int[nelx * nely * 8 * 8];
             jk = new int[nelx * nely * 8 * 8];
-            Wrapper.PreFE(parallel, nelx, nely, ik, jk);
+            Wrapper.PreFE(nelx, nely, ik, jk);
             stopwatch.Stop();
             initInfo.Append("PreFE: " + stopwatch.Elapsed.TotalMilliseconds + '\n');
             prefetime = stopwatch.Elapsed.TotalMilliseconds;
@@ -318,7 +318,7 @@ namespace BESO
 
             // Assemble stiffness matrix with all DOFs
             vk = new double[64 * nelx * nely];
-            Parallel.For(0, nelx, i =>
+            for (int i = 0; i < nelx; i++)
             {
                 for (int j = 0; j < nely; j++)
                 {
@@ -331,7 +331,7 @@ namespace BESO
                         }
                     }
                 }
-            });
+            }
 
             var F = new double[num_allDofs];
             U = new double[num_allDofs];
