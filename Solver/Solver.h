@@ -20,8 +20,26 @@
 #include <cholmod.h>
 #include<time.h> 
 
+#include <amgcl/backend/builtin.hpp>
+#include <amgcl/adapter/crs_tuple.hpp>
+
+#include <amgcl/make_solver.hpp>
+#include <amgcl/amg.hpp>
+#include <amgcl/coarsening/smoothed_aggregation.hpp>
+#include <amgcl/relaxation/spai0.hpp>
+
+#include <amgcl/solver/cg.hpp>
+#include <amgcl/value_type/static_matrix.hpp>
+#include <amgcl/adapter/block_matrix.hpp>
+#include <amgcl/adapter/eigen.hpp>
+
+#include <amgcl/io/mm.hpp>
+#include <amgcl/profiler.hpp>
+
 
 extern "C" __declspec(dllexport) void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets,
+	int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U);
+extern "C" __declspec(dllexport) void Assembly_Solve_AMG(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets,
 	int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U);
 extern "C" __declspec(dllexport) void PreFE(int nelx, int nely, int* ik, int* jk);
 extern "C" __declspec(dllexport) double TransposeMultiply(int rows, int cols, double* A, double* U);

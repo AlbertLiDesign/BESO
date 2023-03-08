@@ -5,8 +5,6 @@ using namespace std;
 
 SparseMatrix<double> H;
 
-
-
 void PrintMatrix(int row, int col, double* val)
 {
     MatrixXd K(row, col);
@@ -93,6 +91,65 @@ void PreFE(int nelx, int nely, int* ik, int* jk)
     }
     delete[] edofVec;
 }
+
+void Assembly_Solve_AMG(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U)
+{
+    // AMG
+    amgcl::profiler<> prof;
+
+    //auto start2 = std::chrono::high_resolution_clock::now();
+    std::vector<Triplet<double>> triplets(num_triplets);
+
+    for (int i = 0; i < num_triplets; i++)
+    {
+        triplets[i] = Triplet<double>(ik[i], jk[i], sk[i]);
+    }
+
+    SparseMatrix<double> K(num_allDofs, num_allDofs);
+    K.setFromTriplets(triplets.begin(), triplets.end());
+
+    std::vector<Triplet<double>> P_triplets(num_freeDofs);
+
+    for (int i = 0; i < num_freeDofs; i++)
+    {
+        P_triplets[i] = Triplet<double>(i, free_dofs[i], 1.0);
+    }
+
+    SparseMatrix<double> P(num_freeDofs, num_allDofs);
+    P.setFromTriplets(P_triplets.begin(), P_triplets.end());
+    auto end2 = std::chrono::high_resolution_clock::now();
+    //std::chrono::duration<double, std::milli> elapsed2 = end2 - start2;
+    //std::cout << "Assembly: " << elapsed2.count() << std::endl;
+
+    SparseMatrix<double> K_freedof = P * K * P.transpose();
+
+
+    VectorXd F_freedof(num_freeDofs);
+    for (int i = 0; i < num_freeDofs; i++)
+        F_freedof(i) = F[free_dofs[i]];
+
+
+    VectorXd result;
+    PardisoLLT<Eigen::SparseMatrix<double>, 1> llt(K_freedof);
+    if (!parallel)
+    {
+        llt.pardisoParameterArray()[59] = 0;
+        mkl_set_num_threads(1);
+    }
+    //llt.pardisoParameterArray()[59] = 0;
+    //llt.pardisoParameterArray()[59] = 2; // Set the solver to use the CG method
+
+    //auto start = std::chrono::high_resolution_clock::now();
+    llt.analyzePattern(K_freedof);
+    llt.factorize(K_freedof);
+    result = llt.solve(F_freedof);
+    //auto end = std::chrono::high_resolution_clock::now();
+    //std::chrono::duration<double, std::milli> elapsed = end - start;
+    //std::cout << "Solver: " << elapsed.count() << std::endl;
+
+    Eigen::VectorXd::Map(U, result.rows()) = result;
+}
+
 
 void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U)
 {

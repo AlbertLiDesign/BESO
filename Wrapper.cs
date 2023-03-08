@@ -11,10 +11,11 @@ namespace BESO
     {
         [DllImport("Solver.dll")]
         public static extern void PrintMatrix(int row, int col, double[] val);
+        [DllImport("Solver.dll")]
+        public static extern void Assembly_Solve_AMG(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int[] free_dofs, int[] ik, int[] jk, double[] vk, double[] F, double[] U);
 
         [DllImport("Solver.dll")]
         public static extern void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int[] free_dofs, int[] ik, int[] jk, double[] vk, double[] F, double[] U);
-
         [DllImport("Solver.dll")]
         public static extern double TransposeMultiply(int rows, int cols, double[] A, double[] U);
 
