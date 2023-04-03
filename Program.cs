@@ -51,7 +51,7 @@ namespace BESO
             Stopwatch stopwatch = new Stopwatch();
 
             BESO3D_time beso = new BESO3D_time(3.0, 0.5, 0.02, 3, 200);
-            beso.Initialize(80, 50, 20);
+            beso.Initialize(80, 50, 40);
             beso.parallel = true;
 
             Console.WriteLine(beso.ModelInfo());

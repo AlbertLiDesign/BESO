@@ -10,31 +10,30 @@
 #define EIGEN_VECTORIZE_SSE4_2
 #include <Eigen/Eigen>
 #include <Eigen/PardisoSupport>
-#include <Eigen/CholmodSupport>
+//#include <Eigen/CholmodSupport>
 
 #include <unsupported/Eigen/SparseExtra>
 #include<unsupported/Eigen/src/SparseExtra/MarketIO.h>
 #include <unsupported/Eigen/KroneckerProduct>
 
 #include<ctime>
-#include <cholmod.h>
 #include<time.h> 
 
-#include <amgcl/backend/builtin.hpp>
-#include <amgcl/adapter/crs_tuple.hpp>
-
-#include <amgcl/make_solver.hpp>
-#include <amgcl/amg.hpp>
-#include <amgcl/coarsening/smoothed_aggregation.hpp>
-#include <amgcl/relaxation/spai0.hpp>
-
-#include <amgcl/solver/cg.hpp>
-#include <amgcl/value_type/static_matrix.hpp>
-#include <amgcl/adapter/block_matrix.hpp>
-#include <amgcl/adapter/eigen.hpp>
-
-#include <amgcl/io/mm.hpp>
-#include <amgcl/profiler.hpp>
+//#include <amgcl/backend/builtin.hpp>
+//#include <amgcl/adapter/crs_tuple.hpp>
+//
+//#include <amgcl/make_solver.hpp>
+//#include <amgcl/amg.hpp>
+//#include <amgcl/coarsening/smoothed_aggregation.hpp>
+//#include <amgcl/relaxation/spai0.hpp>
+//
+//#include <amgcl/solver/cg.hpp>
+//#include <amgcl/value_type/static_matrix.hpp>
+//#include <amgcl/adapter/block_matrix.hpp>
+//#include <amgcl/adapter/eigen.hpp>
+//
+//#include <amgcl/io/mm.hpp>
+//#include <amgcl/profiler.hpp>
 
 
 extern "C" __declspec(dllexport) void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets,
