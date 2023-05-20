@@ -527,7 +527,6 @@ namespace BESO
 
             // Define force vector
             int forceID = (int)Math.Floor((nelz + 1) * 0.5) * (nelx + 1) * (nely + 1) + (int)Math.Floor((nelx + 1) * 0.5) + 1;
-            //int forceID = 18;
             F[forceID * 3 - 1] = -1.0;
 
             // Define fixed dofs

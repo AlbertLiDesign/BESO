@@ -9,7 +9,7 @@ namespace BESO
         {
             Stopwatch stopwatch= new Stopwatch();
             stopwatch.Start();
-            testBESO3DwithTime();
+            testBESO3D();
             stopwatch.Stop();
             Console.WriteLine("Total time:" + '\t' + stopwatch.ElapsedMilliseconds.ToString());
             Console.ReadKey();
@@ -21,7 +21,7 @@ namespace BESO
             sw.Start();
 
             BESO3D beso = new BESO3D(3.0, 0.5);
-            beso.Initialize(80, 50, 20, true);
+            beso.Initialize(10, 8, 6, true);
             Console.WriteLine(beso.ModelInfo());
 
             sw.Stop();
@@ -42,16 +42,45 @@ namespace BESO
                     + " =======================");
                 //beso.WriteXe(@"E:\TestData");
             }
+            Console.WriteLine(beso.optInfo);
+            Console.ReadKey();
+        }
+        private static void testiBESOVR()
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            BESO3D beso = new BESO3D(3.0, 0.5);
+            beso.Initialize(40, 30, 20, true);
+            Console.WriteLine(beso.ModelInfo());
+
+            sw.Stop();
+            Console.WriteLine(
+                "======================= Init. time: "
+                + sw.ElapsedMilliseconds.ToString()
+                + " =======================");
+
+            while (!beso.convergence)
+            {
+                sw.Restart();
+                beso.Optimize();
+                sw.Stop();
+                Console.WriteLine(beso.info);
+                Console.WriteLine(
+                    "======================= It. time: "
+                    + sw.ElapsedMilliseconds.ToString()
+                    + " =======================");
+                //beso.WriteXe(@"E:\TestData");
+            }
             //Console.WriteLine(beso.optInfo);
             Console.ReadKey();
         }
-
         private static void testBESO3DwithTime()
         {
             Stopwatch stopwatch = new Stopwatch();
 
             BESO3D_time beso = new BESO3D_time(3.0, 0.5, 0.02, 3, 200);
-            beso.Initialize(80, 50, 40);
+            beso.Initialize(40, 20, 30);
             beso.parallel = true;
 
             Console.WriteLine(beso.ModelInfo());
