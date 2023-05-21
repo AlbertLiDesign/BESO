@@ -665,7 +665,7 @@ namespace BESO
             return report;
         }
 
-        private void WriteValue(string path, double[] a)
+        public void WriteValue(string path, double[] a)
         {
             StreamWriter sw = new StreamWriter(path);
 
@@ -679,7 +679,7 @@ namespace BESO
             sw.Dispose();
 
         }
-        private void WriteValue(string path, int[] a)
+        public void WriteValue(string path, int[] a)
         {
             StreamWriter sw = new StreamWriter(path);
 

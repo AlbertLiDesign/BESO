@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace BESO
@@ -40,9 +41,20 @@ namespace BESO
                     "======================= It. time: " 
                     + sw.ElapsedMilliseconds.ToString() 
                     + " =======================");
-                //beso.WriteXe(@"E:\TestData");
             }
-            Console.WriteLine(beso.optInfo);
+
+            List<int> xeNum= new List<int>();
+            for (int i = 0; i < beso.Xe.Length; i++)
+            {
+                if (beso.Xe[i] == 1)
+                {
+                    xeNum.Add(i);
+                }
+                
+            }
+            beso.WriteValue("Xe.txt", xeNum.ToArray());
+
+            //Console.WriteLine(beso.optInfo);
             Console.ReadKey();
         }
         private static void testiBESOVR()
