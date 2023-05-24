@@ -528,12 +528,29 @@ namespace BESO
             // Define force vector
             int forceID = (int)Math.Floor((nelz + 1) * 0.5) * (nelx + 1) * (nely + 1) + (int)Math.Floor((nelx + 1) * 0.5) + 1;
             F[forceID * 3 - 1] = -1.0;
+            //var test = new List<int>(6) { 0, 56, 112, 168, 224, 280 };
+            //for (int i = 0; i < test.Count; i++)
+            //{
+            //    F[test[i] * 3 + 1] = -1;
+            //}
 
             // Define fixed dofs
             int num_fixedDofs = 3 * (nelx + 1) * (nelz + 1);
+            //int num_fixedDofs = 42 * 3;
             int num_freeDofs = num_allDofs - num_fixedDofs;
             var fixed_dofs = new int[num_fixedDofs];
 
+            //var testSup = new List<int>(42) { 7, 15, 23, 31, 39, 47, 55, 63, 71, 79, 87, 95, 103, 111, 119, 127, 135, 143, 151, 159, 167, 175, 183, 191, 199, 207, 215, 223, 231, 239, 247, 255, 263, 271, 279, 287, 295, 303, 311, 319, 327, 335 };
+            //int sum = 0;
+            //for (int i = 0; i < testSup.Count; i++)
+            //{
+            //    fixed_dofs[sum] = 3 * testSup[i];
+            //    sum++;
+            //    fixed_dofs[sum] = 3 * testSup[i] + 1;
+            //    sum++;
+            //    fixed_dofs[sum] = 3 * testSup[i] + 2;
+            //    sum++;
+            //}
             // my order
             for (int z = 0; z < nelz + 1; z++)
             {

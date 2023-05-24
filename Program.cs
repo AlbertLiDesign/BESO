@@ -22,7 +22,7 @@ namespace BESO
             sw.Start();
 
             BESO3D beso = new BESO3D(3.0, 0.5);
-            beso.Initialize(10, 8, 6, true);
+            beso.Initialize(8,10,6, true);
             Console.WriteLine(beso.ModelInfo());
 
             sw.Stop();

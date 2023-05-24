@@ -92,99 +92,6 @@ void PreFE(int nelx, int nely, int* ik, int* jk)
     delete[] edofVec;
 }
 
-void Assembly_Solve_AMG(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U)
-{
-    //// AMG
-    //amgcl::profiler<> prof;
-
-    ////auto start2 = std::chrono::high_resolution_clock::now();
-    //std::vector<Triplet<double>> triplets(num_triplets);
-
-    //for (int i = 0; i < num_triplets; i++)
-    //{
-    //    triplets[i] = Triplet<double>(ik[i], jk[i], sk[i]);
-    //}
-
-    //SparseMatrix<double> K(num_allDofs, num_allDofs);
-    //K.setFromTriplets(triplets.begin(), triplets.end());
-
-    //std::vector<Triplet<double>> P_triplets(num_freeDofs);
-
-    //for (int i = 0; i < num_freeDofs; i++)
-    //{
-    //    P_triplets[i] = Triplet<double>(i, free_dofs[i], 1.0);
-    //}
-
-    //SparseMatrix<double> P(num_freeDofs, num_allDofs);
-    //P.setFromTriplets(P_triplets.begin(), P_triplets.end());
-    //auto end2 = std::chrono::high_resolution_clock::now();
-    ////std::chrono::duration<double, std::milli> elapsed2 = end2 - start2;
-    ////std::cout << "Assembly: " << elapsed2.count() << std::endl;
-
-    //SparseMatrix<double> K_freedof = P * K * P.transpose();
-
-
-    //VectorXd F_freedof(num_freeDofs);
-    //for (int i = 0; i < num_freeDofs; i++)
-    //    F_freedof(i) = F[free_dofs[i]];
-
-
-    //VectorXd result;
-
-    //// Compose the solver type
-    //typedef amgcl::static_matrix<double, 2, 2> dmat_type; // matrix value type in double precision
-    //typedef amgcl::static_matrix<double, 2, 1> dvec_type; // the corresponding vector value type
-    //typedef amgcl::static_matrix<float, 2, 2> smat_type; // matrix value type in single precision
-
-    //typedef amgcl::backend::builtin<dmat_type> SBackend; // the solver backend
-    //typedef amgcl::backend::builtin<smat_type> PBackend; // the preconditioner backend
-
-    //// Setup the solver:
-    //typedef amgcl::make_solver<
-    //    amgcl::amg<
-    //    PBackend,
-    //    amgcl::coarsening::smoothed_aggregation,
-    //    amgcl::relaxation::spai0
-    //    >,
-    //    amgcl::solver::cg<SBackend>
-    //> Solver;
-
-    //// Solver parameters
-    //Solver::params prm;
-    //prm.solver.tol = 1e-8;
-    //prm.solver.maxiter = 100;
-    //prm.precond.max_levels = 20;
-    //prm.precond.pre_cycles = 1;
-    //prm.precond.ncycle = 1;
-    //prm.precond.coarsening.aggr.block_size = 2;
-
-    //prof.tic("setup");
-    //auto Ab = amgcl::adapter::block_matrix<dmat_type>(K_freedof);
-    //Solver solve(Ab, prm);
-    //prof.toc("setup");
-    //std::cout << solve << std::endl;
-
-    //// Solve the system for the given RHS:
-    //int    iters;
-    //double error;
-
-    //// Reinterpret both the RHS and the solution vectors as block-valued:
-    //auto b_ptr = reinterpret_cast<dvec_type*>(F_freedof.data());
-    //auto x_ptr = reinterpret_cast<dvec_type*>(x.data());
-    //auto b_block = amgcl::make_iterator_range(b_ptr, b_ptr + num_freeDofs / 2);
-    //auto x_block = amgcl::make_iterator_range(x_ptr, x_ptr + num_freeDofs / 2);
-
-    //prof.tic("solve");
-    //std::tie(iters, error) = solve(b_block, x_block);
-    //prof.toc("solve");
-
-    //std::cout << iters << " " << error << std::endl
-    //    << prof << std::endl;
-
-    //Eigen::VectorXd::Map(U, result.rows()) = result;
-}
-
-
 void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U)
 {
     //auto start2 = std::chrono::high_resolution_clock::now();
@@ -212,7 +119,7 @@ void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_tr
     //std::cout << "Assembly: " << elapsed2.count() << std::endl;
 
     SparseMatrix<double> K_freedof = P * K * P.transpose();
-
+    //Eigen::saveMarket(K_freedof, "K_freedof.mtx");
 
     VectorXd F_freedof(num_freeDofs);
     for (int i = 0; i < num_freeDofs; i++)
