@@ -92,7 +92,7 @@ void PreFE(int nelx, int nely, int* ik, int* jk)
     delete[] edofVec;
 }
 
-void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U)
+void Assembly_Solve(int solver, bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U)
 {
     //auto start2 = std::chrono::high_resolution_clock::now();
     std::vector<Triplet<double>> triplets(num_triplets);
@@ -127,22 +127,38 @@ void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_tr
 
 
     VectorXd result;
-    PardisoLLT<Eigen::SparseMatrix<double>, 1> llt(K_freedof);
-    if (!parallel)
+    PardisoLLT<Eigen::SparseMatrix<double>, 1> pardiso;
+    SimplicialLLT<Eigen::SparseMatrix<double>> simplicial;
+    CholmodSupernodalLLT<Eigen::SparseMatrix<double>> supernodal;
+    switch (solver)
     {
-        llt.pardisoParameterArray()[59] = 0;
-        mkl_set_num_threads(1);
-    }
-    //llt.pardisoParameterArray()[59] = 0;
-    //llt.pardisoParameterArray()[59] = 2; // Set the solver to use the CG method
+    case 0:
+        simplicial.analyzePattern(K_freedof); // 预先分析A的非零模式
+        simplicial.factorize(K_freedof); // 使用已分析的模式进行分解
+        result = simplicial.solve(F_freedof); // 使用分解后的矩阵求解)
+        break;
+    case 1:
+        if (!parallel)
+        {
+            pardiso.pardisoParameterArray()[59] = 0;
+            mkl_set_num_threads(1);
+        }
 
-    //auto start = std::chrono::high_resolution_clock::now();
-    llt.analyzePattern(K_freedof);
-    llt.factorize(K_freedof);
-    result = llt.solve(F_freedof);
-    //auto end = std::chrono::high_resolution_clock::now();
-    //std::chrono::duration<double, std::milli> elapsed = end - start;
-    //std::cout << "Solver: " << elapsed.count() << std::endl;
+        pardiso.analyzePattern(K_freedof);
+        pardiso.factorize(K_freedof);
+        result = pardiso.solve(F_freedof);
+        break;
+    case 2:
+        supernodal.analyzePattern(K_freedof); // 预先分析A的非零模式
+        supernodal.factorize(K_freedof); // 使用已分析的模式进行分解
+        result = supernodal.solve(F_freedof); // 使用分解后的矩阵求解
+        break;
+    default:
+        simplicial.analyzePattern(K_freedof); // 预先分析A的非零模式
+        simplicial.factorize(K_freedof); // 使用已分析的模式进行分解
+        result = simplicial.solve(F_freedof); // 使用分解后的矩阵求解)
+        break;
+    }   
 
     Eigen::VectorXd::Map(U, result.rows()) = result;
 }

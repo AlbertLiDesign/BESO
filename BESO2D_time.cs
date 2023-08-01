@@ -353,7 +353,7 @@ namespace BESO
             changeSupports = false;
 
             var U_freedof = new double[num_freeDofs];
-            Wrapper.Assembly_Solve(parallel, num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, vk, F, U_freedof);
+            Wrapper.Assembly_Solve(1, parallel, num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, vk, F, U_freedof);
 
             for (int i = 0; i < num_freeDofs; i++)
             {

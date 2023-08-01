@@ -10,6 +10,7 @@ namespace BESO
 {
     public class BESO3D_time
     {
+        public int solver = 2;
         public bool parallel = true;
         #region Resolution
         public int nelx;
@@ -124,8 +125,9 @@ namespace BESO
         }
         #endregion
 
-        public void Initialize(int nelx, int nely, int nelz, bool parallel = false)
+        public void Initialize(int nelx, int nely, int nelz, bool parallel = false, int solver = 2)
         {
+            this.solver = solver;
             this.parallel = parallel;
 
             nEl = nelx * nely * nelz;
@@ -513,7 +515,7 @@ namespace BESO
 
             var U_freedof = new double[num_freeDofs];
 
-            Wrapper.Assembly_Solve(parallel, num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
+            Wrapper.Assembly_Solve(solver, parallel, num_freeDofs, num_allDofs, ik.Length, free_dofs, ik, jk, sk, F, U_freedof);
 
             for (int i = 0; i < num_freeDofs; i++)
             {

@@ -15,7 +15,7 @@ namespace BESO
         public static extern void Assembly_Solve_AMG(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int[] free_dofs, int[] ik, int[] jk, double[] vk, double[] F, double[] U);
 
         [DllImport("Solver.dll")]
-        public static extern void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int[] free_dofs, int[] ik, int[] jk, double[] vk, double[] F, double[] U);
+        public static extern void Assembly_Solve(int solver, bool parallel, int num_freeDofs, int num_allDofs, int num_triplets, int[] free_dofs, int[] ik, int[] jk, double[] vk, double[] F, double[] U);
         [DllImport("Solver.dll")]
         public static extern double TransposeMultiply(int rows, int cols, double[] A, double[] U);
 

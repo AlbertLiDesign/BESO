@@ -9,7 +9,11 @@
 #define EIGEN_USE_MKL_ALL
 #define EIGEN_VECTORIZE_SSE4_2
 #include <Eigen/Eigen>
+#include <Eigen/SparseCholesky>
+#include <Eigen/SparseCore>
+
 #include <Eigen/PardisoSupport>
+#include <Eigen/CholmodSupport>
 
 #include <unsupported/Eigen/SparseExtra>
 #include<unsupported/Eigen/src/SparseExtra/MarketIO.h>
@@ -19,7 +23,7 @@
 #include<time.h>
 
 
-extern "C" __declspec(dllexport) void Assembly_Solve(bool parallel, int num_freeDofs, int num_allDofs, int num_triplets,
+extern "C" __declspec(dllexport) void Assembly_Solve(int solver, bool parallel, int num_freeDofs, int num_allDofs, int num_triplets,
 	int* free_dofs, int* ik, int* jk, double* sk, double* F, double* U);
 extern "C" __declspec(dllexport) void PreFE(int nelx, int nely, int* ik, int* jk);
 extern "C" __declspec(dllexport) double TransposeMultiply(int rows, int cols, double* A, double* U);
